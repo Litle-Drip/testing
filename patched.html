@@ -1253,9 +1253,7 @@ async function refreshEthUsd(){
       updatePreview();
       return;
     }
-  }catch(e){
-    console.error('refreshEthUsd failed',e);
-  }
+  }catch(e){}
   const note = $('usdNote');
   if(note){
     note.textContent = 'USD values are estimates only and may be outdated.';
@@ -1299,10 +1297,6 @@ async function updateWalletNetworkLabel(){
 
   if(!provider){
     el.textContent = 'Wallet: not connected';
-    const chipTop = $('chipNetwork');
-    const chipBottom = $('chipNetworkBottom');
-    chipTop?.classList.remove('network-active');
-    chipBottom?.classList.remove('network-active');
     return;
   }
 
@@ -1313,10 +1307,8 @@ async function updateWalletNetworkLabel(){
     let label;
     if(chainId===8453){
       label = 'Wallet: Base Mainnet (8453)';
-      CURRENT_NETWORK = 'mainnet';
     }else if(chainId===84532){
       label = 'Wallet: Base Sepolia (84532)';
-      CURRENT_NETWORK = 'testnet';
     }else{
       label = `Wallet: chainId ${chainId}`;
     }
@@ -1342,33 +1334,15 @@ async function updateWalletNetworkLabel(){
   }
 }
 
-
 async function toggleNetwork(){
   CURRENT_NETWORK = (CURRENT_NETWORK==='mainnet') ? 'testnet' : 'mainnet';
   applyNetworkUI();
-
   try{
-    const net = currentBase();
-    const chainId = net.key==='mainnet' ? 8453 : 84532;
-
-    if(wcProvider){
-      await ensureWalletOnChain(wcProvider, chainId);
-      provider = new ethers.BrowserProvider(wcProvider);
-      signer   = await provider.getSigner();
-    }else{
-      await ensureBase();
-      const eth = getEth();
-      if(eth){
-        provider = new ethers.BrowserProvider(eth);
-        signer   = await provider.getSigner();
-      }
-    }
-    updateWalletNetworkLabel();
+    await ensureBase();
   }catch(e){
     console.error('Network switch canceled or failed',e);
   }
 }
-
 
 /* ---------- Shortcuts ---------- */
 const $ = id => document.getElementById(id);
@@ -1618,15 +1592,6 @@ function getEth(){
 }
 
 async function ensureBase(){
-  // If WalletConnect is active, ensure THAT provider is on the correct Base network
-  if(wcProvider){
-    const net = currentBase();
-    const chainId = net.key === 'mainnet' ? 8453 : 84532;
-    await ensureWalletOnChain(wcProvider, chainId);
-    return;
-  }
-
-  // Fallback to injected wallets (MetaMask / Coinbase / Brave)
   const eth = getEth();
   if(!eth){
     alert('Wallet not found (MetaMask / Coinbase / Brave).');
@@ -1659,7 +1624,6 @@ async function ensureBase(){
   }
 }
 
-
 async function connect(){
   try{
     await ensureBase();
@@ -1672,17 +1636,18 @@ async function connect(){
 
     provider = new ethers.BrowserProvider(eth);
     signer = await provider.getSigner();
-
     $('sbState').textContent = 'Connected';
-    $('sbState').classList.add('ok');
-    $('btnConnect').classList.add('connected');
+    updateWalletNetworkLabel();
 
     const netChipTop = $('chipNetwork');
     const netChipBottom = $('chipNetworkBottom');
     if(netChipTop) netChipTop.classList.add('badge');
     if(netChipBottom) netChipBottom.classList.add('badge');
 
+    $('sbState').classList.add('ok');
+    $('btnConnect').classList.add('connected');
     updateWalletNetworkLabel();
+
   }catch(e){
     console.error('connect() failed',e);
     $('sbState').textContent = 'Not connected';
@@ -1691,7 +1656,6 @@ async function connect(){
     if(w) w.textContent = 'Wallet: not connected';
   }
 }
-
 
 async function ensureWalletOnChain(wcProvider,chainId){
   const chainIdHex = chainId===8453 ? '0x2105' : '0x14a34';
@@ -1764,30 +1728,6 @@ async function connectWithWalletConnect(){
     provider = new ethers.BrowserProvider(wcProvider);
     signer   = await provider.getSigner();
 
-    const handleWcDisconnect = ()=>{
-      try{
-        provider = null;
-        signer = null;
-        if(wcProvider && typeof wcProvider.removeListener==='function'){
-          wcProvider.removeListener('session_delete', handleWcDisconnect);
-          wcProvider.removeListener('disconnect', handleWcDisconnect);
-        }
-        wcProvider = null;
-        $('sbState').textContent = 'Not connected';
-        $('sbState').classList.remove('ok');
-        const w = $('sbWalletNet');
-        if(w) w.textContent = 'Wallet: not connected';
-        $('btnConnect').classList.remove('connected');
-      }catch(err){
-        console.error('handleWcDisconnect error',err);
-      }
-    };
-
-    if(wcProvider && typeof wcProvider.on==='function'){
-      wcProvider.on('session_delete', handleWcDisconnect);
-      wcProvider.on('disconnect', handleWcDisconnect);
-    }
-
     $('sbState').textContent = 'Connected (WalletConnect)';
     $('sbState').classList.add('ok');
     $('btnConnect').classList.add('connected');
@@ -1806,56 +1746,22 @@ async function connectWithWalletConnect(){
     $('sbState').classList.remove('ok');
     const w = $('sbWalletNet');
     if(w) w.textContent = 'Wallet: not connected';
-    provider = null;
-    signer = null;
     if(wcProvider){
       wcProvider = null;
     }
   }
 }
 
-
 function getContract(){
   if(!signer) throw new Error('Connect your wallet first.');
   return new ethers.Contract(currentContract(),ABI,signer);
-}
-
-async function getChainTimeSecs(){
-  if(!provider){
-    return Math.floor(Date.now()/1000);
-  }
-  try{
-    const block = await provider.getBlock('latest');
-    if(block){
-      const ts = (typeof block.timestamp!=='undefined') ? block.timestamp : block.time;
-      if(typeof ts === 'bigint'){
-        return Number(ts);
-      }
-      if(typeof ts === 'number'){
-        return ts;
-      }
-    }
-  }catch(e){
-    console.error('getChainTimeSecs failed, falling back to Date.now()',e);
-  }
-  return Math.floor(Date.now()/1000);
 }
 
 function requireBetId(){
   const raw = String(($('betId').value || '').trim());
   if(!raw) throw new Error('Enter a challenge ID first.');
   if(!/^\d+$/.test(raw)) throw new Error('Challenge ID must be a number.');
-
-  const normalized = raw.replace(/^0+/, '') || '0';
-  if(normalized.length > 30){
-    throw new Error('Challenge ID looks too large. Please double-check it.');
-  }
-
-  try{
-    return BigInt(normalized);
-  }catch(e){
-    throw new Error('Challenge ID is out of range.');
-  }
+  return BigInt(raw);
 }
 
 /* ---------- Actions ---------- */
@@ -1882,7 +1788,7 @@ async function doCreate(){
     $('joinMins').value = jm;
     $('resolveMins').value = rm;
 
-    const stakeWei = ethers.parseEther(stakeEthStr);
+    const stakeWei = ethers.parseEther(stakeEthNum.toFixed(4));
 
     const tx = await c.openChallenge(
       stakeWei,
@@ -1913,7 +1819,6 @@ async function doCreate(){
   }
 }
 
-
 async function doJoin(){
   $('actionStatus').textContent = 'Sending…';
   try{
@@ -1928,40 +1833,10 @@ async function doJoin(){
       return;
     }
 
-    const creator  = b[0].toLowerCase();
-    const opponent = b[1].toLowerCase();
     const stakeWei = b[2];
-    const state    = Number(b[7]);
-    const joinDeadline = Number(b[4]);
-    const now = await getChainTimeSecs();
-
-    if(now > joinDeadline){
-      showError('❌ Join deadline has passed for this challenge', 'actionStatus');
-      return;
-    }
-
+    const state = Number(b[7]);
     if(state!==0){
       showError('❌ Challenge is not open to join', 'actionStatus');
-      return;
-    }
-
-    if(stakeWei<=0n){
-      showError('❌ Stake amount on this challenge is invalid', 'actionStatus');
-      return;
-    }
-
-    const caller = (await signer.getAddress()).toLowerCase();
-    if(caller === creator){
-      showError('❌ You cannot join your own challenge', 'actionStatus');
-      return;
-    }
-    if(opponent !== ethers.ZeroAddress.toLowerCase() && caller === opponent){
-      showError('❌ You have already joined this challenge', 'actionStatus');
-      return;
-    }
-    if(opponent !== ethers.ZeroAddress.toLowerCase() && opponent !== creator){
-      // Someone else is already the opponent
-      showError('❌ This challenge already has an opponent', 'actionStatus');
       return;
     }
 
@@ -1973,7 +1848,6 @@ async function doJoin(){
     showError('❌ ' + (e?.shortMessage || e?.message || e), 'actionStatus');
   }
 }
-
 
   async function doVote(iWon){
   $('actionStatus').textContent = 'Sending…';
@@ -1989,38 +1863,19 @@ async function doJoin(){
       return;
     }
 
+    // Figure out who the caller is
+    const caller   = (await signer.getAddress()).toLowerCase();
     const creator  = b[0].toLowerCase();
     const opponent = b[1].toLowerCase();
-    const joinDeadline    = Number(b[4]);
-    const resolveDeadline = Number(b[5]);
-    const state           = Number(b[7]);
 
-    if(opponent === ethers.ZeroAddress.toLowerCase()){
-      showError('❌ Challenge has no opponent yet', 'actionStatus');
-      return;
-    }
-
-    if(state !== 1){
-      showError('❌ Challenge is not in the voting phase', 'actionStatus');
-      return;
-    }
-
-    const now = await getChainTimeSecs();
-    if(now < joinDeadline){
-      showError('❌ Voting is not open yet for this challenge', 'actionStatus');
-      return;
-    }
-    if(now > resolveDeadline){
-      showError('❌ Resolve deadline has passed — try refund or payout instead', 'actionStatus');
-      return;
-    }
-
-    const caller   = (await signer.getAddress()).toLowerCase();
     if (caller !== creator && caller !== opponent){
       showError('❌ You are not part of this challenge', 'actionStatus');
       return;
     }
 
+    // Convert "I won" into the contract's "creatorWon" flag
+    // - If caller IS the creator, iWon === true  -> creatorWon = true
+    // - If caller IS the opponent, iWon === true -> creatorWon = false
     let creatorWon;
     if (caller === creator){
       creatorWon = !!iWon;
@@ -2032,11 +1887,10 @@ async function doJoin(){
     await tx.wait();
     $('lastTx').href = `${currentBase().explorer}/tx/${tx.hash}`;
     $('actionStatus').textContent = '✅ Vote submitted';
-  }catch(e){
-    showError('❌ ' + (e?.shortMessage || e?.message || e), 'actionStatus');
+    }catch(e){
+      showError('❌ ' + (e?.shortMessage || e?.message || e), 'actionStatus');
+    }
   }
-}
-
 
 async function doRefund(){
   $('actionStatus').textContent = 'Sending…';
@@ -2058,19 +1912,16 @@ async function doRefund(){
     const creatorVote     = Number(b[8]);
     const opponentVote    = Number(b[9]);
 
-    const now = await getChainTimeSecs();
+    const now = Math.floor(Date.now()/1000);
 
-    const noOpponent     = (b[1]===ethers.ZeroAddress);
-    const canSoloRefund  = (state===0 && noOpponent && now>joinDeadline);
+    const noOpponent   = (b[1]===ethers.ZeroAddress);
+    const canSoloRefund   = (state===0 && noOpponent && now>joinDeadline);
 
     const votesSet       = (creatorVote!==-1 && opponentVote!==-1);
     const votesMismatch  = votesSet && (creatorVote!==opponentVote);
     const canSplitRefund = (state===1 && votesMismatch && now>resolveDeadline);
 
-    const noVotes        = (creatorVote===-1 && opponentVote===-1);
-    const canTimeoutRefund = (state===1 && noVotes && now>resolveDeadline);
-
-    if(!canSoloRefund && !canSplitRefund && !canTimeoutRefund){
+    if(!canSoloRefund && !canSplitRefund){
       showError('❌ Refund not available yet for this challenge', 'actionStatus');
       return;
     }
@@ -2083,7 +1934,6 @@ async function doRefund(){
     $('actionStatus').textContent = '❌ ' + (e?.shortMessage || e?.message || e);
   }
 }
-
 
 async function doPayout(){
   $('actionStatus').textContent = 'Sending…';
@@ -2099,27 +1949,12 @@ async function doPayout(){
       return;
     }
 
-    const creator        = b[0].toLowerCase();
-    const opponent       = b[1].toLowerCase();
-    const resolveDeadline = Number(b[5]);
-    const state          = Number(b[7]);
-    const creatorVote    = Number(b[8]);
-    const opponentVote   = Number(b[9]);
-
-    const caller = (await signer.getAddress()).toLowerCase();
-    if(caller !== creator && caller !== opponent){
-      showError('❌ You are not part of this challenge', 'actionStatus');
-      return;
-    }
+    const state        = Number(b[7]);
+    const creatorVote  = Number(b[8]);
+    const opponentVote = Number(b[9]);
 
     if(state!==1){
       showError('❌ Challenge is not in a resolvable state', 'actionStatus');
-      return;
-    }
-
-    const now = await getChainTimeSecs();
-    if(now < resolveDeadline){
-      showError('❌ Resolve deadline has not passed yet — wait until after the resolve time', 'actionStatus');
       return;
     }
 
@@ -2139,7 +1974,6 @@ async function doPayout(){
     $('actionStatus').textContent = '❌ ' + (e?.shortMessage || e?.message || e);
   }
 }
-
 
 /* ---------- Wire UI ---------- */
 window.addEventListener('DOMContentLoaded',()=>{
@@ -2220,9 +2054,9 @@ window.addEventListener('DOMContentLoaded',()=>{
   renderQR();
 
   $('btnCopyLink').onclick = ()=>{
-    navigator.clipboard.writeText($('shareUrl').value || '')
-      .then(()=>{ setCopyPulse($('btnCopyLink')); })
-      .catch(e=>{ openErrorModal('Could not copy link: ' + (e?.message || e)); });
+    navigator.clipboard.writeText($('shareUrl').value || '').then(()=>{
+      setCopyPulse($('btnCopyLink'));
+    });
   };
   $('btnCopyId').onclick = ()=>{
     const id = String(($('betId').value || '').trim());
@@ -2230,9 +2064,9 @@ window.addEventListener('DOMContentLoaded',()=>{
       alert('No challenge ID to copy yet.');
       return;
     }
-    navigator.clipboard.writeText(id)
-      .then(()=>{ setCopyPulse($('btnCopyId')); })
-      .catch(e=>{ openErrorModal('Could not copy ID: ' + (e?.message || e)); });
+    navigator.clipboard.writeText(id).then(()=>{
+      setCopyPulse($('btnCopyId'));
+    });
   };
   $('btnNewBet').onclick = ()=>{
     startNewBet();
