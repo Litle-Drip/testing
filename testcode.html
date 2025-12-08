@@ -2163,25 +2163,23 @@ async function doPayout(){
       return;
     }
 
-    const votesSet      = (creatorVote!==-1 && opponentVote!==-1);
-    const votesMatch    = votesSet && (creatorVote===opponentVote);
+    if(resolveDeadline && now<resolveDeadline){
+      showError('❌ Resolve window not open yet', 'actionStatus');
+      return;
+    }
+
+    const votesSet   = (creatorVote!==-1 && opponentVote!==-1);
+    const votesMatch = votesSet && (creatorVote===opponentVote);
     const votesConflict = votesSet && !votesMatch;
-    const votesMissing  = !votesSet;
-    const hasAnyVote    = (creatorVote!==-1 || opponentVote!==-1);
-    const resolveOpen   = (!resolveDeadline || now>=resolveDeadline);
+    const votesMissing = !votesSet;
 
     if(votesConflict){
       showError('❌ Votes conflict; request a refund instead', 'actionStatus');
       return;
     }
 
-    if(!votesMatch && !resolveOpen){
-      showError('❌ Need matching votes or wait for the resolve deadline', 'actionStatus');
-      return;
-    }
-
-    if(resolveOpen && votesMissing && !hasAnyVote){
-      showError('❌ No votes submitted; request a refund instead', 'actionStatus');
+    if(votesMissing && resolveDeadline && now<resolveDeadline){
+      showError('❌ Need at least one vote before deadline passes', 'actionStatus');
       return;
     }
 
