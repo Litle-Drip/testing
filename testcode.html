@@ -1237,7 +1237,9 @@ const NETWORKS = {
 let CURRENT_NETWORK = 'mainnet';
 
 const FEE_BPS = 250;
+let feeBps = FEE_BPS;
 let ETH_USD = 3500;
+let usdPriceFresh = false;
 
 async function refreshEthUsd(){
   try{
@@ -1246,6 +1248,7 @@ async function refreshEthUsd(){
     const price = parseFloat(data?.data?.amount);
     if(!isNaN(price) && price>0){
       ETH_USD = price;
+      usdPriceFresh = true;
       const note = $('usdNote');
       if(note){
         note.textContent = `USD values use ETH ≈ $${price.toFixed(2)} (preview only).`;
@@ -1253,11 +1256,15 @@ async function refreshEthUsd(){
       updatePreview();
       return;
     }
-  }catch(e){}
+  }catch(e){
+    console.error('refreshEthUsd failed',e);
+  }
+  usdPriceFresh = false;
   const note = $('usdNote');
   if(note){
-    note.textContent = 'USD values are estimates only and may be outdated.';
+    note.textContent = 'USD values are estimates only and may be outdated (stale price).';
   }
+  updatePreview();
 }
 
 function currentBase(){return NETWORKS[CURRENT_NETWORK];}
@@ -1272,6 +1279,14 @@ function applyNetworkUI(){
 
   const chipBottom = $('chipNetworkBottom');
   if(chipBottom) chipBottom.textContent = net.label;
+
+  const feeTop = $('chipFeeTop');
+  const feeBottom = $('chipFeeBottom');
+  const feeBadgeBottom = document.querySelector('.summary-row .badge');
+  const feeText = `Fee ${(feeBps/100).toFixed(2)}%`;
+  if(feeTop) feeTop.textContent = feeText;
+  if(feeBottom) feeBottom.textContent = feeText;
+  if(feeBadgeBottom) feeBadgeBottom.textContent = feeText;
 
   const warning = $('networkWarning');
   if(warning) warning.textContent = net.warning;
@@ -1307,8 +1322,10 @@ async function updateWalletNetworkLabel(){
     let label;
     if(chainId===8453){
       label = 'Wallet: Base Mainnet (8453)';
+      if(CURRENT_NETWORK!=='mainnet'){CURRENT_NETWORK='mainnet';applyNetworkUI();}
     }else if(chainId===84532){
       label = 'Wallet: Base Sepolia (84532)';
+      if(CURRENT_NETWORK!=='testnet'){CURRENT_NETWORK='testnet';applyNetworkUI();}
     }else{
       label = `Wallet: chainId ${chainId}`;
     }
@@ -1337,6 +1354,11 @@ async function updateWalletNetworkLabel(){
 async function toggleNetwork(){
   CURRENT_NETWORK = (CURRENT_NETWORK==='mainnet') ? 'testnet' : 'mainnet';
   applyNetworkUI();
+  resetSignerState('Not connected');
+  if(wcProvider){
+    try{ await wcProvider.disconnect?.(); }catch{}
+    wcProvider = null;
+  }
   try{
     await ensureBase();
   }catch(e){
@@ -1420,31 +1442,31 @@ function setCopyPulse(el){
 function updatePreview(){
   const eth = parseFloat($('stakeEth').value || '0') || 0;
   const pot = eth*2;
-  const win = pot*(1-FEE_BPS/10000);
+  const win = pot*(1-feeBps/10000);
 
   const potEthEl = $('sbPotEth');
   if(potEthEl) potEthEl.textContent = pot.toFixed(4);
 
   const potUsdEl = $('sbPotUsd');
-  if(potUsdEl) potUsdEl.textContent = fmtUsd(pot*ETH_USD);
+  if(potUsdEl) potUsdEl.textContent = usdPriceFresh ? fmtUsd(pot*ETH_USD) : `${fmtUsd(pot*ETH_USD)} (stale)`;
 
   const winEthEl = $('sbWinEth');
   if(winEthEl) winEthEl.textContent = win.toFixed(4);
 
   const winUsdEl = $('sbWinUsd');
-  if(winUsdEl) winUsdEl.textContent = fmtUsd(win*ETH_USD);
+  if(winUsdEl) winUsdEl.textContent = usdPriceFresh ? fmtUsd(win*ETH_USD) : `${fmtUsd(win*ETH_USD)} (stale)`;
 }
 
 /* Hidden fields kept in ETH and USD */
 function applyStakeFromEth(rawEth){
   const eth = Math.max(0,Number(rawEth) || 0);
-  $('stakeEth').value = eth.toFixed(4);
+  $('stakeEth').value = eth.toString();
   $('stakeUsd').value = (eth*ETH_USD).toFixed(0);
   updatePreview();
 
   if(stakeMode==='ETH'){
     $('stakeSymbol').textContent = 'Ξ';
-    $('stakeMain').value = eth.toFixed(4);
+    $('stakeMain').value = eth.toString();
   }else{
     $('stakeSymbol').textContent = '$';
     $('stakeMain').value = (eth*ETH_USD).toFixed(0);
@@ -1572,6 +1594,7 @@ const ABI = [
       {type:'uint64'},{type:'uint64'},{type:'uint64'},{type:'uint8'},
       {type:'int8'},{type:'int8'}
     ]},
+  {type:'function',stateMutability:'view',name:'feeBps',inputs:[],outputs:[{type:'uint16'}]},
   {type:'function',stateMutability:'view',name:'nextChallengeId',
     inputs:[],outputs:[{type:'uint256'}]}
 ];
@@ -1580,6 +1603,48 @@ const ABI = [
 let provider,signer;
 let wcProvider = null;
 const WC_PROJECT_ID = '0a7260b6b9e686ea7a8bcd57085eac0e';
+
+async function handleChainChanged(chainIdHex){
+  const chainId = parseInt(chainIdHex,16);
+  syncNetworkFromChainId(chainId);
+  try{
+    const active = getActiveWalletProvider();
+    if(active){
+      provider = new ethers.BrowserProvider(active);
+      signer = await provider.getSigner();
+    }
+  }catch(e){
+    console.error('handleChainChanged failed',e);
+  }
+  updateWalletNetworkLabel();
+}
+
+function handleDisconnect(){
+  resetSignerState('Not connected');
+  wcProvider = null;
+  updateWalletNetworkLabel();
+}
+
+function syncNetworkFromChainId(chainId){
+  if(chainId===8453){
+    CURRENT_NETWORK = 'mainnet';
+  }else if(chainId===84532){
+    CURRENT_NETWORK = 'testnet';
+  }
+  applyNetworkUI();
+}
+
+function resetSignerState(status){
+  provider = null;
+  signer = null;
+  if(status){
+    const stateEl = $('sbState');
+    if(stateEl){
+      stateEl.textContent = status;
+      stateEl.classList.remove('ok');
+    }
+  }
+}
 
 function getEth(){
   const eth = window.ethereum;
@@ -1591,25 +1656,53 @@ function getEth(){
   return eth;
 }
 
+function getActiveWalletProvider(){
+  if(wcProvider) return wcProvider;
+  return getEth();
+}
+
+async function getChainNow(){
+  try{
+    if(provider){
+      const blk = await provider.getBlock('latest');
+      if(blk?.timestamp) return Number(blk.timestamp);
+    }
+  }catch(e){
+    console.warn('getChainNow fallback to local clock',e);
+  }
+  return Math.floor(Date.now()/1000);
+}
+
 async function ensureBase(){
-  const eth = getEth();
-  if(!eth){
+  const active = getActiveWalletProvider();
+  if(!active){
     alert('Wallet not found (MetaMask / Coinbase / Brave).');
     throw new Error('no wallet');
   }
-  const chain = await eth.request({method:'eth_chainId'});
-  if(chain!==currentBase().idHex){
+
+  const targetHex = currentBase().idHex.toLowerCase();
+
+  // WalletConnect path
+  if(wcProvider){
+    await ensureWalletOnChain(wcProvider, targetHex==='0x2105' ? 8453 : 84532);
+    provider = new ethers.BrowserProvider(wcProvider);
+    signer = await provider.getSigner();
+    return;
+  }
+
+  const chain = (await active.request({method:'eth_chainId'})).toLowerCase();
+  if(chain!==targetHex){
     try{
-      await eth.request({
+      await active.request({
         method:'wallet_switchEthereumChain',
-        params:[{chainId:currentBase().idHex}]
+        params:[{chainId:targetHex}]
       });
     }catch(e){
       if(e.code===4902){
-        await eth.request({
+        await active.request({
           method:'wallet_addEthereumChain',
           params:[{
-            chainId:currentBase().idHex,
+            chainId:targetHex,
             chainName:currentBase().chainName,
             nativeCurrency:{name:'ETH',symbol:'ETH',decimals:18},
             rpcUrls:[currentBase().rpc],
@@ -1621,6 +1714,23 @@ async function ensureBase(){
         throw e;
       }
     }
+  }
+
+  provider = new ethers.BrowserProvider(active);
+  signer = await provider.getSigner();
+}
+
+async function syncFeeFromContract(){
+  try{
+    const baseProvider = provider || new ethers.JsonRpcProvider(currentBase().rpc);
+    const contract = new ethers.Contract(currentContract(),ABI,baseProvider);
+    const onChainFee = await contract.feeBps();
+    if(onChainFee!==undefined){
+      feeBps = Number(onChainFee);
+      applyNetworkUI();
+    }
+  }catch(e){
+    console.warn('fee sync skipped',e);
   }
 }
 
@@ -1636,6 +1746,12 @@ async function connect(){
 
     provider = new ethers.BrowserProvider(eth);
     signer = await provider.getSigner();
+    eth.removeAllListeners?.('chainChanged');
+    eth.on?.('chainChanged',handleChainChanged);
+    eth.on?.('disconnect',handleDisconnect);
+    const net = await provider.getNetwork();
+    syncNetworkFromChainId(Number(net.chainId.toString()));
+    await syncFeeFromContract();
     $('sbState').textContent = 'Connected';
     updateWalletNetworkLabel();
 
@@ -1727,6 +1843,15 @@ async function connectWithWalletConnect(){
 
     provider = new ethers.BrowserProvider(wcProvider);
     signer   = await provider.getSigner();
+    wcProvider.removeListener?.('disconnect',handleDisconnect);
+    wcProvider.removeListener?.('session_delete',handleDisconnect);
+    wcProvider.removeListener?.('chainChanged',handleChainChanged);
+    wcProvider.on?.('disconnect',handleDisconnect);
+    wcProvider.on?.('session_delete',handleDisconnect);
+    wcProvider.on?.('chainChanged',handleChainChanged);
+    const net = await provider.getNetwork();
+    syncNetworkFromChainId(Number(net.chainId.toString()));
+    await syncFeeFromContract();
 
     $('sbState').textContent = 'Connected (WalletConnect)';
     $('sbState').classList.add('ok');
@@ -1757,11 +1882,23 @@ function getContract(){
   return new ethers.Contract(currentContract(),ABI,signer);
 }
 
-function requireBetId(){
-  const raw = String(($('betId').value || '').trim());
+async function requireBetId(contract){
+  let raw = String(($('betId').value || '').trim());
   if(!raw) throw new Error('Enter a challenge ID first.');
   if(!/^\d+$/.test(raw)) throw new Error('Challenge ID must be a number.');
-  return BigInt(raw);
+  raw = raw.replace(/^0+(\d)/,'$1');
+  const betId = BigInt(raw);
+
+  try{
+    const nextId = await contract.nextChallengeId();
+    if(nextId && betId>=BigInt(nextId)){
+      throw new Error('Challenge ID is out of range.');
+    }
+  }catch(e){
+    console.warn('nextChallengeId lookup failed (non-fatal)',e);
+  }
+
+  return betId;
 }
 
 /* ---------- Actions ---------- */
@@ -1772,7 +1909,7 @@ async function doCreate(){
     if(!signer) await connect();
     const c = getContract();
 
-    const stakeEthStr = String($('stakeEth').value || '0');
+    const stakeEthStr = String($('stakeEth').value || '0').trim();
     const stakeEthNum = Number(stakeEthStr);
     if(!Number.isFinite(stakeEthNum) || stakeEthNum<=0){
       throw new Error('Stake must be greater than zero.');
@@ -1785,14 +1922,27 @@ async function doCreate(){
       throw new Error('Resolve deadline must be greater than join deadline.');
     }
 
+    const now = await getChainNow();
+    const joinDeadlineTs = now + (jm*60);
+    const resolveDeadlineTs = now + (rm*60);
+    if(joinDeadlineTs <= now+60){
+      throw new Error('Join deadline must be at least 1 minute from now.');
+    }
+    if(resolveDeadlineTs <= joinDeadlineTs){
+      throw new Error('Resolve deadline must be after join deadline.');
+    }
+    if((joinDeadlineTs-now) < 600){
+      $('createStatus').textContent = '⚠️ Join window is very short; transaction may revert if blocks are delayed.';
+    }
+
     $('joinMins').value = jm;
     $('resolveMins').value = rm;
 
-    const stakeWei = ethers.parseEther(stakeEthNum.toFixed(4));
+    const stakeWei = ethers.parseEther(stakeEthStr);
 
     const tx = await c.openChallenge(
       stakeWei,
-      FEE_BPS,
+      feeBps,
       BigInt(jm*60),
       BigInt(rm*60),
       {value:stakeWei}
@@ -1825,7 +1975,7 @@ async function doJoin(){
     await ensureBase();
     if(!signer) await connect();
     const c = getContract();
-    const betId = requireBetId();
+    const betId = await requireBetId(c);
 
     const b = await c.getChallenge(betId);
     if(b[0]===ethers.ZeroAddress){
@@ -1835,8 +1985,34 @@ async function doJoin(){
 
     const stakeWei = b[2];
     const state = Number(b[7]);
+    const joinDeadline = Number(b[4]);
+    const caller = (await signer.getAddress()).toLowerCase();
+    const creator = b[0].toLowerCase();
+    const opponent = b[1].toLowerCase();
+    const now = await getChainNow();
+
     if(state!==0){
       showError('❌ Challenge is not open to join', 'actionStatus');
+      return;
+    }
+    if(joinDeadline && now>joinDeadline){
+      showError('❌ Join deadline passed', 'actionStatus');
+      return;
+    }
+    if(stakeWei<=0){
+      showError('❌ Invalid stake for this challenge', 'actionStatus');
+      return;
+    }
+    if(caller===creator){
+      showError('❌ You cannot join your own challenge', 'actionStatus');
+      return;
+    }
+    if(opponent!==ethers.ZeroAddress){
+      if(caller===opponent){
+        showError('❌ You already joined this challenge', 'actionStatus');
+        return;
+      }
+      showError('❌ Opponent already joined', 'actionStatus');
       return;
     }
 
@@ -1855,11 +2031,28 @@ async function doJoin(){
     await ensureBase();
     if(!signer) await connect();
     const c = getContract();
-    const betId = requireBetId();
+    const betId = await requireBetId(c);
 
     const b = await c.getChallenge(betId);
     if (b[0] === ethers.ZeroAddress){
       showError('❌ Challenge not found', 'actionStatus');
+      return;
+    }
+
+    const now = await getChainNow();
+    const state = Number(b[7]);
+    const resolveDeadline = Number(b[5]);
+
+    if(b[1]===ethers.ZeroAddress){
+      showError('❌ Cannot vote until an opponent joins', 'actionStatus');
+      return;
+    }
+    if(state!==1){
+      showError('❌ Challenge is not in voting state', 'actionStatus');
+      return;
+    }
+    if(resolveDeadline && now>resolveDeadline){
+      showError('❌ Resolve window ended; request refund or payout', 'actionStatus');
       return;
     }
 
@@ -1898,7 +2091,7 @@ async function doRefund(){
     await ensureBase();
     if(!signer) await connect();
     const c = getContract();
-    const betId = requireBetId();
+    const betId = await requireBetId(c);
 
     const b = await c.getChallenge(betId);
     if(b[0]===ethers.ZeroAddress){
@@ -1912,16 +2105,18 @@ async function doRefund(){
     const creatorVote     = Number(b[8]);
     const opponentVote    = Number(b[9]);
 
-    const now = Math.floor(Date.now()/1000);
+    const now = await getChainNow();
 
     const noOpponent   = (b[1]===ethers.ZeroAddress);
     const canSoloRefund   = (state===0 && noOpponent && now>joinDeadline);
 
     const votesSet       = (creatorVote!==-1 && opponentVote!==-1);
     const votesMismatch  = votesSet && (creatorVote!==opponentVote);
+    const noVotes        = !votesSet;
     const canSplitRefund = (state===1 && votesMismatch && now>resolveDeadline);
+    const canTimeoutRefund = (state===1 && noVotes && now>resolveDeadline);
 
-    if(!canSoloRefund && !canSplitRefund){
+    if(!canSoloRefund && !canSplitRefund && !canTimeoutRefund){
       showError('❌ Refund not available yet for this challenge', 'actionStatus');
       return;
     }
@@ -1941,7 +2136,7 @@ async function doPayout(){
     await ensureBase();
     if(!signer) await connect();
     const c = getContract();
-    const betId = requireBetId();
+    const betId = await requireBetId(c);
     const b = await c.getChallenge(betId);
 
     if(b[0]===ethers.ZeroAddress){
@@ -1952,17 +2147,41 @@ async function doPayout(){
     const state        = Number(b[7]);
     const creatorVote  = Number(b[8]);
     const opponentVote = Number(b[9]);
+    const resolveDeadline = Number(b[5]);
+    const caller = (await signer.getAddress()).toLowerCase();
+    const creator = b[0].toLowerCase();
+    const opponent = b[1].toLowerCase();
+    const now = await getChainNow();
 
     if(state!==1){
       showError('❌ Challenge is not in a resolvable state', 'actionStatus');
       return;
     }
 
-    const votesSet   = (creatorVote!==-1 && opponentVote!==-1);
-    const votesMatch = votesSet && (creatorVote===opponentVote);
+    if(caller!==creator && caller!==opponent){
+      showError('❌ You are not part of this challenge', 'actionStatus');
+      return;
+    }
 
-    if(!votesMatch){
-      showError('❌ Both sides must vote and agree before payout', 'actionStatus');
+    const votesSet      = (creatorVote!==-1 && opponentVote!==-1);
+    const votesMatch    = votesSet && (creatorVote===opponentVote);
+    const votesConflict = votesSet && !votesMatch;
+    const votesMissing  = !votesSet;
+    const hasAnyVote    = (creatorVote!==-1 || opponentVote!==-1);
+    const resolveOpen   = (!resolveDeadline || now>=resolveDeadline);
+
+    if(votesConflict){
+      showError('❌ Votes conflict; request a refund instead', 'actionStatus');
+      return;
+    }
+
+    if(!votesMatch && !resolveOpen){
+      showError('❌ Need matching votes or wait for the resolve deadline', 'actionStatus');
+      return;
+    }
+
+    if(resolveOpen && votesMissing && !hasAnyVote){
+      showError('❌ No votes submitted; request a refund instead', 'actionStatus');
       return;
     }
 
@@ -1978,6 +2197,7 @@ async function doPayout(){
 /* ---------- Wire UI ---------- */
 window.addEventListener('DOMContentLoaded',()=>{
   applyNetworkUI();
+  syncFeeFromContract();
   const btnSwitch = $('btnSwitch'); if(btnSwitch) btnSwitch.onclick = toggleNetwork;
   const btnWC = $('btnWalletConnect'); if(btnWC) btnWC.onclick = connectWithWalletConnect;
 
@@ -2054,9 +2274,9 @@ window.addEventListener('DOMContentLoaded',()=>{
   renderQR();
 
   $('btnCopyLink').onclick = ()=>{
-    navigator.clipboard.writeText($('shareUrl').value || '').then(()=>{
-      setCopyPulse($('btnCopyLink'));
-    });
+    navigator.clipboard.writeText($('shareUrl').value || '')
+      .then(()=>{ setCopyPulse($('btnCopyLink')); })
+      .catch(err=>{ console.error('copy link failed',err); showError('❌ Unable to copy link', 'actionStatus'); });
   };
   $('btnCopyId').onclick = ()=>{
     const id = String(($('betId').value || '').trim());
@@ -2064,9 +2284,9 @@ window.addEventListener('DOMContentLoaded',()=>{
       alert('No challenge ID to copy yet.');
       return;
     }
-    navigator.clipboard.writeText(id).then(()=>{
-      setCopyPulse($('btnCopyId'));
-    });
+    navigator.clipboard.writeText(id)
+      .then(()=>{ setCopyPulse($('btnCopyId')); })
+      .catch(err=>{ console.error('copy id failed',err); showError('❌ Unable to copy ID', 'actionStatus'); });
   };
   $('btnNewBet').onclick = ()=>{
     startNewBet();
