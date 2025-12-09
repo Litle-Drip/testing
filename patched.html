@@ -1767,6 +1767,7 @@ async function connectWithWalletConnect(){
     wcProvider = await EthereumProvider.init({
       projectId:WC_PROJECT_ID,
       chains: [8453, 84532],
+      optionalChains: [8453, 84532],
       showQrModal:true,
       metadata:{
         name:'The Juice',
