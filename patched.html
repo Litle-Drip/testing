@@ -1368,10 +1368,51 @@ function closeErrorModal(){
  * targetId is "createStatus" or "actionStatus".
  */
 function showError(message, targetId){
-  if (targetId && $(targetId)){
-    $(targetId).textContent = message;
+  // Normalize to a plain string
+  let msg = '';
+  if (message == null){
+    msg = '';
+  } else if (typeof message === 'string'){
+    msg = message;
+  } else if (message?.shortMessage){
+    msg = message.shortMessage;
+  } else if (message?.info?.error?.message){
+    msg = message.info.error.message;
+  } else if (message?.message){
+    msg = message.message;
+  } else {
+    msg = String(message);
   }
-  openErrorModal(message);
+
+  const lower = msg.toLowerCase();
+
+  // If we hit the classic ethers "missing revert data / CALL_EXCEPTION" case,
+  // show a friendly "switch networks" message instead.
+  if (lower.includes('missing revert data') || lower.includes('call_exception')){
+    let netLabel = 'Base';
+    try {
+      const net = currentBase(); // uses CURRENT_NETWORK + NETWORKS
+      netLabel = (net.key === 'mainnet')
+        ? 'Base Mainnet (chain 8453)'
+        : 'Base Sepolia Testnet (chain 84532)';
+    } catch(e) {
+      // fall back to generic
+    }
+
+    msg =
+      '❌ Your wallet rejected this transaction or is on the wrong network.\n\n' +
+      `Open your wallet and switch to ${netLabel}, then try again.`;
+  } else {
+    // Ensure we always prefix with ❌ for other errors
+    if (!msg.startsWith('❌')){
+      msg = '❌ ' + msg;
+    }
+  }
+
+  if (targetId && $(targetId)){
+    $(targetId).textContent = msg;
+  }
+  openErrorModal(msg);
 }
 
 /* ---------- QR + share helpers ---------- */
