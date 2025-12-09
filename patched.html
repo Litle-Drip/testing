@@ -1578,6 +1578,7 @@ const ABI = [
 /* ---------- Wallet / ethers ---------- */
 let provider,signer;
 let wcProvider = null;
+let activeConnector = 'injected'; // 'injected' or 'walletconnect'
 const WC_PROJECT_ID = '0a7260b6b9e686ea7a8bcd57085eac0e';
 
 function getEth(){
@@ -1591,28 +1592,39 @@ function getEth(){
 }
 
 async function ensureBase(){
+  const net = currentBase();
+  const expectedChainId = net.key==='mainnet' ? 8453 : 84532;
+
+  // If we're using WalletConnect, keep that session on the right chain
+  if (activeConnector === 'walletconnect' && wcProvider) {
+    await ensureWalletOnChain(wcProvider, expectedChainId);
+    return;
+  }
+
+  // Default: injected wallet (MetaMask / Coinbase / Brave)
   const eth = getEth();
   if(!eth){
     alert('Wallet not found (MetaMask / Coinbase / Brave).');
     throw new Error('no wallet');
   }
+
   const chain = await eth.request({method:'eth_chainId'});
-  if(chain!==currentBase().idHex){
+  if(chain!==net.idHex){
     try{
       await eth.request({
         method:'wallet_switchEthereumChain',
-        params:[{chainId:currentBase().idHex}]
+        params:[{chainId:net.idHex}]
       });
     }catch(e){
       if(e.code===4902){
         await eth.request({
           method:'wallet_addEthereumChain',
           params:[{
-            chainId:currentBase().idHex,
-            chainName:currentBase().chainName,
+            chainId:net.idHex,
+            chainName:net.chainName,
             nativeCurrency:{name:'ETH',symbol:'ETH',decimals:18},
-            rpcUrls:[currentBase().rpc],
-            blockExplorerUrls:[currentBase().explorer]
+            rpcUrls:[net.rpc],
+            blockExplorerUrls:[net.explorer]
           }]
         });
       }else{
@@ -1635,6 +1647,8 @@ async function connect(){
 
     provider = new ethers.BrowserProvider(eth);
     signer = await provider.getSigner();
+    activeConnector = 'injected';
+
     $('sbState').textContent = 'Connected';
     updateWalletNetworkLabel();
 
@@ -1726,8 +1740,10 @@ async function connectWithWalletConnect(){
 
     provider = new ethers.BrowserProvider(wcProvider);
     signer   = await provider.getSigner();
+    activeConnector = 'walletconnect';
 
     $('sbState').textContent = 'Connected (WalletConnect)';
+
     $('sbState').classList.add('ok');
     $('btnConnect').classList.add('connected');
 
@@ -1827,19 +1843,27 @@ async function doJoin(){
     const betId = requireBetId();
 
     const b = await c.getBet(betId);
-    if(b[0]===ethers.ZeroAddress){
+    if (b[0] === ethers.ZeroAddress){
       showError('❌ Challenge not found', 'actionStatus');
       return;
     }
 
-    const stakeWei = b[2];
-    const state = Number(b[7]);
-    if(state!==0){
+    const stakeWei     = b[2];
+    const joinDeadline = Number(b[4]);
+    const state        = Number(b[7]);
+    const now          = Math.floor(Date.now()/1000);
+
+    if (state !== 0){
       showError('❌ Challenge is not open to join', 'actionStatus');
+      return;
+    }
+    if (now > joinDeadline){
+      showError('❌ Join deadline has passed for this challenge', 'actionStatus');
       return;
     }
 
     const tx = await c.joinBet(betId,{value:stakeWei});
+
     await tx.wait();
     $('lastTx').href = `${currentBase().explorer}/tx/${tx.hash}`;
     $('actionStatus').textContent = '✅ Joined challenge';
@@ -1930,7 +1954,7 @@ async function doRefund(){
     $('lastTx').href = `${currentBase().explorer}/tx/${tx.hash}`;
     $('actionStatus').textContent = '✅ Refund sent';
   }catch(e){
-    $('actionStatus').textContent = '❌ ' + (e?.shortMessage || e?.message || e);
+    showError('❌ ' + (e?.shortMessage || e?.message || e), 'actionStatus');
   }
 }
 
