@@ -1823,22 +1823,34 @@ function requireBetId(){
 
 /* ---------- Actions ---------- */
 async function doCreate(){
-  $('createStatus').textContent = 'Sending…';
+  const btn = $('btnCreate');
+  if (btn) btn.disabled = true;
+
+  $('createStatus').textContent = 'Waiting for wallet…';
+
   try{
-    await ensureBase();
-    if(!signer) await connect();
+    // 1) Make sure wallet is on the right network and connected.
+    try{
+      await ensureBase();
+      if (!signer) await connect();
+    }catch(e){
+      // User probably canceled network switch or connect
+      showError('❌ Please approve the request in your wallet, then try again.', 'createStatus');
+      return;
+    }
+
     const c = getContract();
 
     const stakeEthStr = String($('stakeEth').value || '0');
     const stakeEthNum = Number(stakeEthStr);
-    if(!Number.isFinite(stakeEthNum) || stakeEthNum<=0){
+    if (!Number.isFinite(stakeEthNum) || stakeEthNum <= 0){
       throw new Error('Stake must be greater than zero.');
     }
 
-    let jm = Math.max(5,Math.min(43200,parseInt($('joinMins').value || '15',10)));
-    let rm = Math.max(30,Math.min(43200,parseInt($('resolveMins').value || '30',10)));
+    let jm = Math.max(5, Math.min(43200, parseInt($('joinMins').value || '15', 10)));
+    let rm = Math.max(30, Math.min(43200, parseInt($('resolveMins').value || '30', 10)));
 
-    if(rm<=jm){
+    if (rm <= jm){
       throw new Error('Resolve deadline must be greater than join deadline.');
     }
 
@@ -1847,67 +1859,58 @@ async function doCreate(){
 
     const stakeWei = ethers.parseEther(stakeEthNum.toFixed(4));
 
+    $('createStatus').textContent = 'Sending transaction…';
+
     const tx = await c.createBet(
       stakeWei,
       FEE_BPS,
-      BigInt(jm*60),
-      BigInt(rm*60),
-      {value:stakeWei}
+      BigInt(jm * 60),
+      BigInt(rm * 60),
+      { value: stakeWei }
     );
 
-    $('createStatus').textContent = 'Pending ' + tx.hash;
+    $('createStatus').textContent = '⏳ Transaction sent, waiting for confirmation…';
 
-    await tx.wait();
-    $('lastTx').href = `${currentBase().explorer}/tx/${tx.hash}`;
-    $('createStatus').textContent = '✅ Challenge created';
+    const receipt = await tx.wait();
+    $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
+    $('createStatus').textContent = '✅ Challenge created!';
 
-    const nextId = await c.nextBetId();
-    const betId = (BigInt(nextId) - 1n).toString();
-    $('betId').value = betId;
-    $('shareUrl').value = currentShareUrl();
-    renderQR();
-    $('newBetNote').style.display = 'block';
-
-    const tabJoin = $('tabJoin');
-    if(tabJoin) tabJoin.click();
-  }catch(e){
-    console.error('createBet error', e);
-
-    // Pull out a readable message from ethers error
-    const rawMsg =
-      e?.shortMessage ||
-      e?.info?.error?.message ||
-      e?.message ||
-      String(e);
-
-    // If we see the classic “missing revert data / CALL_EXCEPTION” pattern,
-    // show a clear network hint instead.
-    const lower = (rawMsg || '').toLowerCase();
-    const isMissingRevert =
-      lower.includes('missing revert data') ||
-      lower.includes('call_exception');
-
-    let friendly = rawMsg;
-    if (isMissingRevert){
-      const net = currentBase();
-      const netLabel = net.key === 'mainnet'
-        ? 'Base Mainnet (chain 8453)'
-        : 'Base Sepolia Testnet (chain 84532)';
-
-      friendly =
-        `Your wallet is on the wrong network for this bet.\n\n` +
-        `Open your wallet and switch to ${netLabel}, then try again.`;
+    // Derive the new bet id from nextBetId()
+    try{
+      const nextId = await c.nextBetId();
+      const createdId = (BigInt(nextId) - 1n).toString();
+      $('betId').value = createdId;
+      $('actionStatus').textContent = `Loaded challenge #${createdId}`;
+    }catch(e){
+      console.warn('could not fetch nextBetId', e);
     }
 
-    showError('❌ ' + friendly, 'createStatus');
+    const tabJoin = $('tabJoin');
+    if (tabJoin) tabJoin.click();
+
+  }catch(e){
+    console.error('createBet error', e);
+    showError(e, 'createStatus'); // showError will handle network / revert messages
+  }finally{
+    if (btn) btn.disabled = false;
   }
 }
 
 async function doJoin(){
-  $('actionStatus').textContent = 'Sending…';
+  const btn = $('btnJoin');
+  if (btn) btn.disabled = true;
+
+  $('actionStatus').textContent = 'Waiting for wallet…';
+
   try{
-    await ensureBase();
-    if(!signer) await connect();
+    try{
+      await ensureBase();
+      if (!signer) await connect();
+    }catch(e){
+      showError('❌ Please approve the request in your wallet, then try again.', 'actionStatus');
+      return;
+    }
+
     const c = getContract();
     const betId = requireBetId();
 
@@ -1931,21 +1934,38 @@ async function doJoin(){
       return;
     }
 
-    const tx = await c.joinBet(betId,{value:stakeWei});
+    $('actionStatus').textContent = 'Sending transaction…';
 
-    await tx.wait();
-    $('lastTx').href = `${currentBase().explorer}/tx/${tx.hash}`;
+    const tx = await c.joinBet(betId, { value: stakeWei });
+    const receipt = await tx.wait();
+    $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('actionStatus').textContent = '✅ Joined challenge';
   }catch(e){
-    showError('❌ ' + (e?.shortMessage || e?.message || e), 'actionStatus');
+    console.error('joinBet error', e);
+    showError(e, 'actionStatus');
+  }finally{
+    if (btn) btn.disabled = false;
   }
 }
 
-  async function doVote(iWon){
-  $('actionStatus').textContent = 'Sending…';
+async function doVote(iWon){
+  const btnIWon   = $('btnIWon');
+  const btnILost  = $('btnILost');
+  const btnPayout = $('btnPayout');
+
+  [btnIWon, btnILost, btnPayout].forEach(b => { if (b) b.disabled = true; });
+
+  $('actionStatus').textContent = 'Waiting for wallet…';
+
   try{
-    await ensureBase();
-    if(!signer) await connect();
+    try{
+      await ensureBase();
+      if (!signer) await connect();
+    }catch(e){
+      showError('❌ Please approve the request in your wallet, then try again.', 'actionStatus');
+      return;
+    }
+
     const c = getContract();
     const betId = requireBetId();
 
@@ -1955,7 +1975,6 @@ async function doJoin(){
       return;
     }
 
-    // Figure out who the caller is
     const caller   = (await signer.getAddress()).toLowerCase();
     const creator  = b[0].toLowerCase();
     const opponent = b[1].toLowerCase();
@@ -1965,105 +1984,126 @@ async function doJoin(){
       return;
     }
 
-    // Convert "I won" into the contract's "creatorWon" flag
-    // - If caller IS the creator, iWon === true  -> creatorWon = true
-    // - If caller IS the opponent, iWon === true -> creatorWon = false
     let creatorWon;
     if (caller === creator){
       creatorWon = !!iWon;
-    } else {
+    }else{
       creatorWon = !iWon;
     }
 
+    $('actionStatus').textContent = 'Sending transaction…';
+
     const tx = await c.confirmWinner(betId, creatorWon);
-    await tx.wait();
-    $('lastTx').href = `${currentBase().explorer}/tx/${tx.hash}`;
-    $('actionStatus').textContent = '✅ Vote submitted';
-    }catch(e){
-      showError('❌ ' + (e?.shortMessage || e?.message || e), 'actionStatus');
-    }
+    const receipt = await tx.wait();
+    $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
+    $('actionStatus').textContent = '✅ Vote recorded';
+  }catch(e){
+    console.error('confirmWinner error', e);
+    showError(e, 'actionStatus');
+  }finally{
+    [btnIWon, btnILost, btnPayout].forEach(b => { if (b) b.disabled = false; });
   }
+}
 
 async function doRefund(){
-  $('actionStatus').textContent = 'Sending…';
+  const btn = $('btnRefund');
+  if (btn) btn.disabled = true;
+
+  $('actionStatus').textContent = 'Waiting for wallet…';
+
   try{
-    await ensureBase();
-    if(!signer) await connect();
+    try{
+      await ensureBase();
+      if (!signer) await connect();
+    }catch(e){
+      showError('❌ Please approve the request in your wallet, then try again.', 'actionStatus');
+      return;
+    }
+
     const c = getContract();
     const betId = requireBetId();
 
     const b = await c.getBet(betId);
-    if(b[0]===ethers.ZeroAddress){
+    if (b[0] === ethers.ZeroAddress){
       showError('❌ Challenge not found', 'actionStatus');
       return;
     }
 
-    const joinDeadline    = Number(b[4]);
-    const resolveDeadline = Number(b[5]);
-    const state           = Number(b[7]);
-    const creatorVote     = Number(b[8]);
-    const opponentVote    = Number(b[9]);
+    const creator        = b[0];
+    const opponent       = b[1];
+    const joinDeadline   = Number(b[4]);
+    const resolveDeadline= Number(b[5]);
+    const state          = Number(b[7]);
+    const creatorVote    = Number(b[8]);
+    const opponentVote   = Number(b[9]);
 
     const now = Math.floor(Date.now()/1000);
 
-    const noOpponent   = (b[1]===ethers.ZeroAddress);
-    const canSoloRefund   = (state===0 && noOpponent && now>joinDeadline);
+    const noOpponent     = opponent === ethers.ZeroAddress;
+    const votesMismatch  = (creatorVote !== 0 && opponentVote !== 0 && creatorVote !== opponentVote);
+    const canSoloRefund  = (noOpponent && now > joinDeadline);
+    const canSplitRefund = (state === 1 && votesMismatch && now > resolveDeadline);
 
-    const votesSet       = (creatorVote!==-1 && opponentVote!==-1);
-    const votesMismatch  = votesSet && (creatorVote!==opponentVote);
-    const canSplitRefund = (state===1 && votesMismatch && now>resolveDeadline);
-
-    if(!canSoloRefund && !canSplitRefund){
+    if (!canSoloRefund && !canSplitRefund){
       showError('❌ Refund not available yet for this challenge', 'actionStatus');
       return;
     }
 
+    $('actionStatus').textContent = 'Sending transaction…';
+
     const tx = await c.refund(betId);
-    await tx.wait();
-    $('lastTx').href = `${currentBase().explorer}/tx/${tx.hash}`;
+    const receipt = await tx.wait();
+    $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('actionStatus').textContent = '✅ Refund sent';
   }catch(e){
-    showError('❌ ' + (e?.shortMessage || e?.message || e), 'actionStatus');
+    console.error('refund error', e);
+    showError(e, 'actionStatus');
+  }finally{
+    if (btn) btn.disabled = false;
   }
 }
 
 async function doPayout(){
-  $('actionStatus').textContent = 'Sending…';
+  const btn = $('btnPayout');
+  if (btn) btn.disabled = true;
+
+  $('actionStatus').textContent = 'Waiting for wallet…';
+
   try{
-    await ensureBase();
-    if(!signer) await connect();
+    try{
+      await ensureBase();
+      if (!signer) await connect();
+    }catch(e){
+      showError('❌ Please approve the request in your wallet, then try again.', 'actionStatus');
+      return;
+    }
+
     const c = getContract();
     const betId = requireBetId();
-    const b = await c.getBet(betId);
 
-    if(b[0]===ethers.ZeroAddress){
+    const b = await c.getBet(betId);
+    if (b[0] === ethers.ZeroAddress){
       showError('❌ Challenge not found', 'actionStatus');
       return;
     }
 
-    const state        = Number(b[7]);
-    const creatorVote  = Number(b[8]);
-    const opponentVote = Number(b[9]);
-
-    if(state!==1){
-      showError('❌ Challenge is not in a resolvable state', 'actionStatus');
+    const state = Number(b[7]);
+    if (state !== 1){
+      showError('❌ This challenge is not ready to finalize.', 'actionStatus');
       return;
     }
 
-    const votesSet   = (creatorVote!==-1 && opponentVote!==-1);
-    const votesMatch = votesSet && (creatorVote===opponentVote);
-
-    if(!votesMatch){
-      showError('❌ Both sides must vote and agree before payout', 'actionStatus');
-      return;
-    }
+    $('actionStatus').textContent = 'Sending transaction…';
 
     const tx = await c.resolve(betId);
-    await tx.wait();
-    $('lastTx').href = `${currentBase().explorer}/tx/${tx.hash}`;
-    $('actionStatus').textContent = '✅ Payout finalized';
+    const receipt = await tx.wait();
+    $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
+    $('actionStatus').textContent = '✅ Payout sent';
   }catch(e){
-    $('actionStatus').textContent = '❌ ' + (e?.shortMessage || e?.message || e);
+    console.error('resolve error', e);
+    showError(e, 'actionStatus');
+  }finally{
+    if (btn) btn.disabled = false;
   }
 }
 
