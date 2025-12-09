@@ -1829,8 +1829,35 @@ async function doCreate(){
     const tabJoin = $('tabJoin');
     if(tabJoin) tabJoin.click();
   }catch(e){
-    console.error('createBet error',e);
-    showError('❌ ' + (e?.shortMessage || e?.message || e), 'createStatus');
+    console.error('createBet error', e);
+
+    // Pull out a readable message from ethers error
+    const rawMsg =
+      e?.shortMessage ||
+      e?.info?.error?.message ||
+      e?.message ||
+      String(e);
+
+    // If we see the classic “missing revert data / CALL_EXCEPTION” pattern,
+    // show a clear network hint instead.
+    const lower = (rawMsg || '').toLowerCase();
+    const isMissingRevert =
+      lower.includes('missing revert data') ||
+      lower.includes('call_exception');
+
+    let friendly = rawMsg;
+    if (isMissingRevert){
+      const net = currentBase();
+      const netLabel = net.key === 'mainnet'
+        ? 'Base Mainnet (chain 8453)'
+        : 'Base Sepolia Testnet (chain 84532)';
+
+      friendly =
+        `Your wallet is on the wrong network for this bet.\n\n` +
+        `Open your wallet and switch to ${netLabel}, then try again.`;
+    }
+
+    showError('❌ ' + friendly, 'createStatus');
   }
 }
 
