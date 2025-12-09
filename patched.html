@@ -1555,17 +1555,17 @@ function startNewBet(){
 
 /* ---------- ABI ---------- */
 const ABI = [
-  {type:'function',stateMutability:'payable',name:'openChallenge',
-    inputs:[{type:'uint256'},{type:'uint16'},{type:'uint64'},{type:'uint64'}],outputs:[]},
-  {type:'function',stateMutability:'payable',name:'joinChallenge',
-    inputs:[{type:'uint256'}],outputs:[]},
-  {type:'function',stateMutability:'nonpayable',name:'submitOutcomeVote',
-    inputs:[{type:'uint256'},{type:'bool'}],outputs:[]},
-  {type:'function',stateMutability:'nonpayable',name:'resolveChallenge',
-    inputs:[{type:'uint256'}],outputs:[]},
-  {type:'function',stateMutability:'nonpayable',name:'issueRefund',
-    inputs:[{type:'uint256'}],outputs:[]},
-  {type:'function',stateMutability:'view',name:'getChallenge',
+  { type:'function', stateMutability:'payable',   name:'createBet',
+    inputs:[{type:'uint256'},{type:'uint16'},{type:'uint64'},{type:'uint64'}], outputs:[] },
+  { type:'function', stateMutability:'payable',   name:'joinBet',
+    inputs:[{type:'uint256'}], outputs:[] },
+  { type:'function', stateMutability:'nonpayable', name:'confirmWinner',
+    inputs:[{type:'uint256'},{type:'bool'}], outputs:[] },
+  { type:'function', stateMutability:'nonpayable', name:'resolve',
+    inputs:[{type:'uint256'}], outputs:[] },
+  { type:'function', stateMutability:'nonpayable', name:'refund',
+    inputs:[{type:'uint256'}], outputs:[] },
+  { type:'function', stateMutability:'view',      name:'getBet',
     inputs:[{type:'uint256'}],
     outputs:[
       {type:'address'},{type:'address'},{type:'uint256'},{type:'uint16'},
@@ -1790,7 +1790,7 @@ async function doCreate(){
 
     const stakeWei = ethers.parseEther(stakeEthNum.toFixed(4));
 
-    const tx = await c.openChallenge(
+    const tx = await c.createBet(
       stakeWei,
       FEE_BPS,
       BigInt(jm*60),
@@ -1827,7 +1827,7 @@ async function doJoin(){
     const c = getContract();
     const betId = requireBetId();
 
-    const b = await c.getChallenge(betId);
+    const b = await c.getBet(betId);
     if(b[0]===ethers.ZeroAddress){
       showError('❌ Challenge not found', 'actionStatus');
       return;
@@ -1840,7 +1840,7 @@ async function doJoin(){
       return;
     }
 
-    const tx = await c.joinChallenge(betId,{value:stakeWei});
+    const tx = await c.joinBet(betId,{value:stakeWei});
     await tx.wait();
     $('lastTx').href = `${currentBase().explorer}/tx/${tx.hash}`;
     $('actionStatus').textContent = '✅ Joined challenge';
@@ -1857,7 +1857,7 @@ async function doJoin(){
     const c = getContract();
     const betId = requireBetId();
 
-    const b = await c.getChallenge(betId);
+    const b = await c.getBet(betId);
     if (b[0] === ethers.ZeroAddress){
       showError('❌ Challenge not found', 'actionStatus');
       return;
@@ -1883,7 +1883,7 @@ async function doJoin(){
       creatorWon = !iWon;
     }
 
-    const tx = await c.submitOutcomeVote(betId, creatorWon);
+    const tx = await c.confirmWinner(betId, creatorWon);
     await tx.wait();
     $('lastTx').href = `${currentBase().explorer}/tx/${tx.hash}`;
     $('actionStatus').textContent = '✅ Vote submitted';
@@ -1900,7 +1900,7 @@ async function doRefund(){
     const c = getContract();
     const betId = requireBetId();
 
-    const b = await c.getChallenge(betId);
+    const b = await c.getBet(betId);
     if(b[0]===ethers.ZeroAddress){
       showError('❌ Challenge not found', 'actionStatus');
       return;
@@ -1926,7 +1926,7 @@ async function doRefund(){
       return;
     }
 
-    const tx = await c.issueRefund(betId);
+    const tx = await c.refund(betId);
     await tx.wait();
     $('lastTx').href = `${currentBase().explorer}/tx/${tx.hash}`;
     $('actionStatus').textContent = '✅ Refund sent';
@@ -1942,7 +1942,7 @@ async function doPayout(){
     if(!signer) await connect();
     const c = getContract();
     const betId = requireBetId();
-    const b = await c.getChallenge(betId);
+    const b = await c.getBet(betId);
 
     if(b[0]===ethers.ZeroAddress){
       showError('❌ Challenge not found', 'actionStatus');
@@ -1966,7 +1966,7 @@ async function doPayout(){
       return;
     }
 
-    const tx = await c.resolveChallenge(betId);
+    const tx = await c.resolve(betId);
     await tx.wait();
     $('lastTx').href = `${currentBase().explorer}/tx/${tx.hash}`;
     $('actionStatus').textContent = '✅ Payout finalized';
