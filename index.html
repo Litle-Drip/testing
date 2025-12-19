@@ -1219,7 +1219,7 @@ const NETWORKS = {
     idHex:'0x2105',
     rpc:'https://mainnet.base.org',
     explorer:'https://basescan.org',
-    contract:'0x61eD264AAEF359717B2070E0426B26aa27D54890',
+    contract:'0x474b39dF73745CFC9D84A961b2544b4b236757Dc',
     warning:'⚠️ Base Mainnet — Real ETH. Start with small stakes.'
   },
   testnet:{
@@ -1229,7 +1229,7 @@ const NETWORKS = {
     idHex:'0x14A34',
     rpc:'https://sepolia.base.org',
     explorer:'https://sepolia.basescan.org',
-    contract:'0xD251F4aFB44Fa54Af8E714C8219d5a535Bc59433',
+    contract:'0x61eD264AAEF359717B2070E0426B26aa27D54890',
     warning:'🧪 Base Sepolia — Test ETH only.'
   }
 };
@@ -1596,26 +1596,31 @@ function startNewBet(){
 
 /* ---------- ABI ---------- */
 const ABI = [
-  {type:'function',stateMutability:'payable',name:'createBet',
-    inputs:[{type:'uint256'},{type:'uint16'},{type:'uint64'},{type:'uint64'}],outputs:[]},
-  {type:'function',stateMutability:'payable',name:'joinBet',
-    inputs:[{type:'uint256'}],outputs:[]},
-  {type:'function',stateMutability:'nonpayable',name:'confirmWinner',
-    inputs:[{type:'uint256'},{type:'bool'}],outputs:[]},
-  {type:'function',stateMutability:'nonpayable',name:'resolve',
-    inputs:[{type:'uint256'}],outputs:[]},
-  {type:'function',stateMutability:'nonpayable',name:'refund',
-    inputs:[{type:'uint256'}],outputs:[]},
-  {type:'function',stateMutability:'view',name:'getBet',
-    inputs:[{type:'uint256'}],
-    outputs:[
-      {type:'address'},{type:'address'},{type:'uint256'},{type:'uint16'},
-      {type:'uint64'},{type:'uint64'},{type:'uint64'},{type:'uint8'},
-      {type:'int8'},{type:'int8'}
-    ]},
-  {type:'function',stateMutability:'view',name:'nextBetId',
-    inputs:[],outputs:[{type:'uint256'}]}
+  // --- Read-only views ---
+  'function getChallenge(uint256 challengeId) view returns (address challenger, address participant, uint256 stakeWei, uint16 feeBps, uint64 joinDeadline, uint64 resolveDeadline, uint64 createdAt, uint8 state, int8 challengerVote, int8 participantVote)',
+  'function nextChallengeId() view returns (uint256)',
+  'function protocolFeeBps() view returns (uint16)',
+  'function MIN_PROTOCOL_FEE_BPS() view returns (uint16)',
+  'function MAX_PROTOCOL_FEE_BPS() view returns (uint16)',
+  'function refundPenaltyBps() view returns (uint16)',
+  'function MIN_REFUND_PENALTY_BPS() view returns (uint16)',
+  'function MAX_REFUND_PENALTY_BPS() view returns (uint16)',
+  'function paused() view returns (bool)',
+
+  // --- Core challenge actions ---
+  'function openChallenge(uint256 stakeWei, uint16 feeBps, uint64 joinWindowSeconds, uint64 resolveWindowSeconds) payable returns (uint256 challengeId)',
+  'function joinChallenge(uint256 challengeId) payable',
+  'function submitOutcomeVote(uint256 challengeId, bool challengerWon)',
+  'function resolveChallenge(uint256 challengeId)',
+  'function issueRefund(uint256 challengeId)',
+
+  // --- Owner / treasury only (you’ll use these from Etherscan, not the UI) ---
+  'function setProtocolFeeBps(uint16 newFeeBps)',
+  'function setRefundPenaltyBps(uint16 newPenaltyBps)',
+  'function setPaused(bool paused_)',
+  'function withdrawProtocolFees(address to)'
 ];
+
 /* ---------- Wallet / ethers ---------- */
 let provider,signer;
 let wcProvider = null;
@@ -1861,7 +1866,7 @@ async function doCreate(){
 
     $('createStatus').textContent = 'Sending transaction…';
 
-    const tx = await c.createBet(
+    const tx = await c.openChallenge(
       stakeWei,
       FEE_BPS,
       BigInt(jm * 60),
@@ -1877,8 +1882,8 @@ async function doCreate(){
 
     // Derive the new bet id from nextBetId()
     try{
-      const nextId = await c.nextBetId();
-      const createdId = (BigInt(nextId) - 1n).toString();
+      const nextId = await c.nextChallengeId();
+      const betId = BigInt(nextId) - 1n;
       $('betId').value = createdId;
       $('actionStatus').textContent = `Loaded challenge #${createdId}`;
     }catch(e){
@@ -1969,7 +1974,7 @@ async function doVote(iWon){
     const c = getContract();
     const betId = requireBetId();
 
-    const b = await c.getBet(betId);
+    const bet = await c.getChallenge(betId);
     if (b[0] === ethers.ZeroAddress){
       showError('❌ Challenge not found', 'actionStatus');
       return;
@@ -1993,7 +1998,7 @@ async function doVote(iWon){
 
     $('actionStatus').textContent = 'Sending transaction…';
 
-    const tx = await c.confirmWinner(betId, creatorWon);
+    const tx = await c.joinChallenge(betId, { value: bet[2] });
     const receipt = await tx.wait();
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('actionStatus').textContent = '✅ Vote recorded';
@@ -2095,7 +2100,7 @@ async function doPayout(){
 
     $('actionStatus').textContent = 'Sending transaction…';
 
-    const tx = await c.resolve(betId);
+    const tx = await c.resolveChallenge(betId);
     const receipt = await tx.wait();
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('actionStatus').textContent = '✅ Payout sent';
