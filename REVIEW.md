@@ -1,7 +1,0 @@
-# The Juice DApp review
-
-## testcode.html
-- **WalletConnect transactions fail early (Lines 1594-1625, 1771, 1823, 1852, 1895, 1938):** `ensureBase()` always uses `window.ethereum` and throws when WalletConnect is the only wallet, but every action (`doCreate`, `doJoin`, `doVote`, `doRefund`, `doPayout`) calls it. Fix by letting `ensureBase` accept/derive the active provider (WalletConnect vs. injected), and skip the injected-wallet check when `wcProvider` is in use.
-- **Join transaction can revert after join deadline (Lines 1823-1844, 1909-1919):** `doJoin` only checks contract state but not `joinDeadline`; calling `joinChallenge` after the deadline wastes gas when the contract reverts. Add a guard `if(now > Number(b[4])) showError(...)` before sending the tx.
-- **Payout lacks participant or resolve-window validation (Lines 1938-1973):** `doPayout` allows any caller to try `resolveChallenge` without checking they are in the challenge or that the resolve window has started/ended, risking revert data and wasted gas. Mirror the participant check from `doVote` and ensure `Date.now()/1000 >= b[5]` before calling.
-- **Fee display/control may drift from contract fee (Lines 1239, 1556-1577):** Front-end hardcodes `FEE_BPS = 250` and passes it into `openChallenge` while also using it for previews. If the contract enforces a different fee or caps, the tx may revert or the UI will misstate payouts. Consider reading fee settings from the contract (e.g., a getter) and validating before sending.
