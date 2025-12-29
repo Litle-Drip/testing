@@ -200,12 +200,6 @@
       align-items:center;
       justify-content:space-between;
     }
-    .subchips-left{
-      display:flex;
-      flex-wrap:wrap;
-      gap:6px;
-      align-items:center;
-    }
     .subchips .chip,
     .summary-card .chip{
       cursor:pointer;
@@ -398,7 +392,6 @@
     }
     input[type="number"]{-moz-appearance:textfield}
 
-    /* Stake box */
     .stake-box{
       display:flex;
       align-items:center;
@@ -569,18 +562,6 @@
       text-align:center;
       margin-bottom:10px;
     }
-    .vote-grid{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:8px;
-      margin-bottom:12px;
-    }
-    .vote-column-title{
-      font-size:11px;
-      color:#a1a1aa;
-      text-align:center;
-      margin-bottom:6px;
-    }
     .vote-buttons{
       display:flex;
       flex-direction:column;
@@ -725,8 +706,9 @@
       font-size:11px;
     }
     .site-footer a:hover{text-decoration:underline}
+
     .deadline-highlight{
-      background:#ffffff !important;
+      background:#ffffff !important;  
       color:#000000 !important;
       border:2px solid var(--accent) !important;
       border-radius:40px !important;
@@ -736,8 +718,8 @@
       color:#000000 !important;
       border-color:var(--accent) !important;
     }
-
-    /* ---------- ERROR MODAL ---------- */
+    
+    /* Error Modal */
     .error-modal{
       position:fixed;
       inset:0;
@@ -780,9 +762,7 @@
       font-size:16px;
       padding:2px 4px;
     }
-    .error-modal-close:hover{
-      color:var(--text);
-    }
+    .error-modal-close:hover{color:var(--text)}
     .error-modal-body{
       font-size:13px;
       color:var(--muted);
@@ -827,15 +807,9 @@
         text-decoration:none !important;
         cursor:pointer;
       }
-      .app{
-        padding:14px 12px 28px;
-      }
-      .card{
-        padding:16px;
-      }
-      .subbar{
-        padding:0 8px;
-      }
+      .app{padding:14px 12px 28px}
+      .card{padding:16px}
+      .subbar{padding:0 8px}
       .subchips{
         display:flex;
         flex-direction:row;
@@ -843,13 +817,6 @@
         align-items:center;
         justify-content:center;
         gap:6px;
-      }
-      .subchips-left{
-        display:flex;
-        flex-direction:row;
-        flex-wrap:nowrap;
-        align-items:center;
-        width:auto;
       }
       .subchips .chip{
         width:auto;
@@ -859,13 +826,8 @@
         white-space:nowrap;
         justify-content:center;
       }
-      .quick-row{
-        grid-template-columns:repeat(2,minmax(0,1fr));
-      }
-      .stake-amount{
-        font-size:28px;
-        min-width:80px;
-      }
+      .quick-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .stake-amount{font-size:28px;min-width:80px}
       .stake-main{
         flex-wrap:wrap;
         justify-content:center;
@@ -877,31 +839,17 @@
         padding:8px 12px;
         border-radius:18px;
       }
-      .stake-box .stake-symbol{
-        font-size:22px;
-      }
-      .stake-box .stake-amount{
-        width:100px;
-        max-width:100px;
-        font-size:24px;
-      }
-      .stake-adjust{
-        margin-right:0;
-      }
-      .stake-adjust,
-      .stake-toggle{
-        margin-left:0;
-      }
+      .stake-box .stake-symbol{font-size:22px}
+      .stake-box .stake-amount{width:100px;max-width:100px;font-size:24px}
+      .stake-adjust{margin-right:0}
+      .stake-adjust,.stake-toggle{margin-left:0}
       .stake-toggle{
         flex-direction:row;
         justify-content:center;
         width:100%;
         gap:8px;
       }
-      .stake-toggle button{
-        flex:1;
-        max-width:120px;
-      }
+      .stake-toggle button{flex:1;max-width:120px}
       .site-footer{
         flex-direction:row;
         align-items:center;
@@ -917,9 +865,7 @@
         gap:12px;
         flex-wrap:wrap;
       }
-      .site-footer a{
-        margin:0;
-      }
+      .site-footer a{margin:0}
     }
   </style>
 </head>
@@ -1125,7 +1071,7 @@
     <div class="help-line">Refunds are fee-free if deadlines pass.</div>
   </div>
 
-    <footer class="site-footer">
+  <footer class="site-footer">
     <div>© <span id="yearNow"></span> The Juice Labs</div>
     <nav>
       <a href="terms.html">Terms</a>
@@ -1139,15 +1085,10 @@
     <div class="error-modal-card">
       <div class="error-modal-header">
         <span>Error</span>
-        <button type="button"
-                class="error-modal-close"
-                onclick="closeErrorModal()">✕</button>
+        <button type="button" class="error-modal-close" onclick="closeErrorModal()">✕</button>
       </div>
       <div id="errorModalMessage" class="error-modal-body"></div>
-      <button type="button"
-              class="btn accent"
-              style="width:100%;margin-top:12px"
-              onclick="closeErrorModal()">
+      <button type="button" class="btn accent" style="width:100%;margin-top:12px" onclick="closeErrorModal()">
         Got it
       </button>
     </div>
@@ -1180,7 +1121,6 @@ const NETWORKS = {
 };
 
 let CURRENT_NETWORK = 'mainnet';
-
 const FEE_BPS = 250;
 let ETH_USD = 3500;
 
@@ -1192,17 +1132,13 @@ async function refreshEthUsd(){
     if(!isNaN(price) && price>0){
       ETH_USD = price;
       const note = $('usdNote');
-      if(note){
-        note.textContent = `USD values use ETH ≈ $${price.toFixed(2)} (preview only).`;
-      }
+      if(note) note.textContent = `USD values use ETH ≈ $${price.toFixed(2)} (preview only).`;
       updatePreview();
       return;
     }
   }catch(e){}
   const note = $('usdNote');
-  if(note){
-    note.textContent = 'USD values are estimates only and may be outdated.';
-  }
+  if(note) note.textContent = 'USD values are estimates only and may be outdated.';
 }
 
 function currentBase(){return NETWORKS[CURRENT_NETWORK];}
@@ -1229,9 +1165,7 @@ function applyNetworkUI(){
 
   const switchBtn = $('btnSwitch');
   if(switchBtn){
-    switchBtn.textContent = (CURRENT_NETWORK==='mainnet')
-      ? 'Use Base Sepolia'
-      : 'Use Base Mainnet';
+    switchBtn.textContent = (CURRENT_NETWORK==='mainnet') ? 'Use Base Sepolia' : 'Use Base Mainnet';
   }
   updateWalletNetworkLabel();
 }
@@ -1239,16 +1173,13 @@ function applyNetworkUI(){
 async function updateWalletNetworkLabel(){
   const el = $('sbWalletNet');
   if(!el) return;
-
   if(!provider){
     el.textContent = 'Wallet: not connected';
     return;
   }
-
   try{
     const net = await provider.getNetwork();
     const chainId = Number(net.chainId.toString());
-
     let label;
     if(chainId===8453){
       label = 'Wallet: Base Mainnet (8453)';
@@ -1257,7 +1188,6 @@ async function updateWalletNetworkLabel(){
     }else{
       label = `Wallet: chainId ${chainId}`;
     }
-
     el.textContent = label;
 
     const chipTop = $('chipNetwork');
@@ -1298,7 +1228,6 @@ function openErrorModal(message){
   const modal = $('errorModal');
   const msgEl = $('errorModalMessage');
   if (!modal || !msgEl) return;
-
   msgEl.textContent = message;
   modal.classList.add('visible');
 }
@@ -1308,12 +1237,7 @@ function closeErrorModal(){
   if (modal) modal.classList.remove('visible');
 }
 
-/**
- * Show an error in the inline status area AND in the popup.
- * targetId is "createStatus" or "actionStatus".
- */
 function showError(message, targetId){
-  // Normalize to a plain string
   let msg = '';
   if (message == null){
     msg = '';
@@ -1330,25 +1254,14 @@ function showError(message, targetId){
   }
 
   const lower = msg.toLowerCase();
-
-  // If we hit the classic ethers "missing revert data / CALL_EXCEPTION" case,
-  // show a friendly "switch networks" message instead.
   if (lower.includes('missing revert data') || lower.includes('call_exception')){
     let netLabel = 'Base';
     try {
-      const net = currentBase(); // uses CURRENT_NETWORK + NETWORKS
-      netLabel = (net.key === 'mainnet')
-        ? 'Base Mainnet (chain 8453)'
-        : 'Base Sepolia Testnet (chain 84532)';
-    } catch(e) {
-      // fall back to generic
-    }
-
-    msg =
-      '❌ Your wallet rejected this transaction or is on the wrong network.\n\n' +
-      `Open your wallet and switch to ${netLabel}, then try again.`;
+      const net = currentBase();
+      netLabel = (net.key === 'mainnet') ? 'Base Mainnet (chain 8453)' : 'Base Sepolia Testnet (chain 84532)';
+    } catch(e) {}
+    msg = '❌ Your wallet rejected this transaction or is on the wrong network.\n\n' + `Open your wallet and switch to ${netLabel}, then try again.`;
   } else {
-    // Ensure we always prefix with ❌ for other errors
     if (!msg.startsWith('❌')){
       msg = '❌ ' + msg;
     }
@@ -1421,7 +1334,6 @@ function updatePreview(){
   if(winUsdEl) winUsdEl.textContent = fmtUsd(win*ETH_USD);
 }
 
-/* Hidden fields kept in ETH and USD */
 function applyStakeFromEth(rawEth){
   const eth = Math.max(0,Number(rawEth) || 0);
   $('stakeEth').value = eth.toFixed(4);
@@ -1469,7 +1381,6 @@ function setStakeMode(mode){
   }
 }
 
-/* ---------- Stake input wiring ---------- */
 function handleStakeMainInput(){
   const raw = $('stakeMain').value;
   if(stakeMode==='ETH'){
@@ -1541,7 +1452,6 @@ function startNewBet(){
 
 /* ---------- ABI ---------- */
 const ABI = [
-  // --- Read-only views ---
   'function getChallenge(uint256 challengeId) view returns (address challenger, address participant, uint256 stakeWei, uint16 feeBps, uint64 joinDeadline, uint64 resolveDeadline, uint64 createdAt, uint8 state, int8 challengerVote, int8 participantVote)',
   'function nextChallengeId() view returns (uint256)',
   'function protocolFeeBps() view returns (uint16)',
@@ -1549,16 +1459,13 @@ const ABI = [
   'function MAX_PROTOCOL_FEE_BPS() view returns (uint16)',
   'function refundPenaltyBps() view returns (uint16)',
   'function MIN_REFUND_PENALTY_BPS() view returns (uint16)',
+  'function MAX_REFUND_PENALTY_BPS() view returns (uint16)',
   'function paused() view returns (bool)',
-
-  // --- Core challenge actions ---
   'function openChallenge(uint256 stakeWei, uint16 feeBps, uint64 joinWindowSeconds, uint64 resolveWindowSeconds) payable returns (uint256 challengeId)',
   'function joinChallenge(uint256 challengeId) payable',
   'function submitOutcomeVote(uint256 challengeId, bool challengerWon)',
   'function resolveChallenge(uint256 challengeId)',
   'function issueRefund(uint256 challengeId)',
-
-  // --- Owner / treasury only (you’ll use these from Etherscan, not the UI) ---
   'function setProtocolFeeBps(uint16 newFeeBps)',
   'function setRefundPenaltyBps(uint16 newPenaltyBps)',
   'function setPaused(bool paused_)',
@@ -1568,7 +1475,7 @@ const ABI = [
 /* ---------- Wallet / ethers ---------- */
 let provider,signer;
 let wcProvider = null;
-let activeConnector = 'injected'; // 'injected' or 'walletconnect'
+let activeConnector = 'injected';
 const WC_PROJECT_ID = '0a7260b6b9e686ea7a8bcd57085eac0e';
 
 function getEth(){
@@ -1585,13 +1492,11 @@ async function ensureBase(){
   const net = currentBase();
   const expectedChainId = net.key==='mainnet' ? 8453 : 84532;
 
-  // If we're using WalletConnect, keep that session on the right chain
   if (activeConnector === 'walletconnect' && wcProvider) {
     await ensureWalletOnChain(wcProvider, expectedChainId);
     return;
   }
 
-  // Default: injected wallet (MetaMask / Coinbase / Brave)
   const eth = getEth();
   if(!eth){
     alert('Wallet not found (MetaMask / Coinbase / Brave).');
@@ -1778,18 +1683,15 @@ async function doCreate(){
   $('createStatus').textContent = 'Waiting for wallet…';
 
   try{
-    // 1) Make sure wallet is on the right network and connected.
     try{
       await ensureBase();
       if (!signer) await connect();
     }catch(e){
-      // User probably canceled network switch or connect
       showError('❌ Please approve the request in your wallet, then try again.', 'createStatus');
       return;
     }
 
     const c = getContract();
-
     const stakeEthStr = String($('stakeEth').value || '0');
     const stakeEthNum = Number(stakeEthStr);
     if (!Number.isFinite(stakeEthNum) || stakeEthNum <= 0){
@@ -1807,7 +1709,6 @@ async function doCreate(){
     $('resolveMins').value = rm;
 
     const stakeWei = ethers.parseEther(stakeEthNum.toFixed(4));
-
     $('createStatus').textContent = 'Sending transaction…';
 
     const tx = await c.openChallenge(
@@ -1819,18 +1720,15 @@ async function doCreate(){
     );
 
     $('createStatus').textContent = '⏳ Transaction sent, waiting for confirmation…';
-
     const receipt = await tx.wait();
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('createStatus').textContent = '✅ Challenge created!';
 
-    // Derive the new bet id from nextChallengeId()
     try{
       const nextId = await c.nextChallengeId();
-      // The one we just created is nextId - 1
-      const createdId = BigInt(nextId) - 1n;
-      $('betId').value = createdId.toString();
-      $('actionStatus').textContent = `Loaded challenge #${createdId}`;
+      const betId = BigInt(nextId) - 1n;
+      $('betId').value = betId.toString();
+      $('actionStatus').textContent = `Loaded challenge #${betId}`;
     }catch(e){
       console.warn('could not fetch nextChallengeId', e);
     }
@@ -1839,8 +1737,8 @@ async function doCreate(){
     if (tabJoin) tabJoin.click();
 
   }catch(e){
-    console.error('createBet error', e);
-    showError(e, 'createStatus'); // showError will handle network / revert messages
+    console.error('openChallenge error', e);
+    showError(e, 'createStatus');
   }finally{
     if (btn) btn.disabled = false;
   }
@@ -1891,7 +1789,7 @@ async function doJoin(){
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('actionStatus').textContent = '✅ Joined challenge';
   }catch(e){
-    console.error('joinBet error', e);
+    console.error('joinChallenge error', e);
     showError(e, 'actionStatus');
   }finally{
     if (btn) btn.disabled = false;
@@ -1904,65 +1802,6 @@ async function doVote(iWon){
   const btnPayout = $('btnPayout');
 
   [btnIWon, btnILost, btnPayout].forEach(b => { if (b) b.disabled = true; });
-
-  $('actionStatus').textContent = 'Waiting for wallet…';
-
-  try{
-    try{
-      await ensureBase();
-      if (!signer) await connect();
-    }catch(e){
-      showError('❌ Please approve the request in your wallet, then try again.', 'actionStatus');
-      return;
-    }
-
-    const c = getContract();
-    const betId = requireBetId();
-
-    const bet = await c.getChallenge(betId);
-    if (bet[0] === ethers.ZeroAddress){
-      showError('❌ Challenge not found', 'actionStatus');
-      return;
-    }
-
-    const caller   = (await signer.getAddress()).toLowerCase();
-    const creator  = bet[0].toLowerCase();
-    const opponent = bet[1].toLowerCase();
-
-    if (caller !== creator && caller !== opponent){
-      showError('❌ You are not part of this challenge', 'actionStatus');
-      return;
-    }
-
-    // Logic: if caller is Creator, did Creator win?
-    // If caller is Opponent, did Creator win?
-    let creatorWon;
-    if (caller === creator){
-      // I am creator. I say "I won" => creatorWon = true.
-      creatorWon = !!iWon;
-    }else{
-      // I am opponent. I say "I won" => creatorWon = false.
-      creatorWon = !iWon;
-    }
-
-    $('actionStatus').textContent = 'Sending transaction…';
-
-    const tx = await c.submitOutcomeVote(betId, creatorWon);
-    const receipt = await tx.wait();
-    $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
-    $('actionStatus').textContent = '✅ Vote recorded';
-  }catch(e){
-    console.error('confirmWinner error', e);
-    showError(e, 'actionStatus');
-  }finally{
-    [btnIWon, btnILost, btnPayout].forEach(b => { if (b) b.disabled = false; });
-  }
-}
-
-async function doRefund(){
-  const btn = $('btnRefund');
-  if (btn) btn.disabled = true;
-
   $('actionStatus').textContent = 'Waiting for wallet…';
 
   try{
@@ -1983,6 +1822,59 @@ async function doRefund(){
       return;
     }
 
+    const caller   = (await signer.getAddress()).toLowerCase();
+    const creator  = b[0].toLowerCase();
+    const opponent = b[1].toLowerCase();
+
+    if (caller !== creator && caller !== opponent){
+      showError('❌ You are not part of this challenge', 'actionStatus');
+      return;
+    }
+
+    let creatorWon;
+    if (caller === creator){
+      creatorWon = !!iWon;
+    }else{
+      creatorWon = !iWon;
+    }
+
+    $('actionStatus').textContent = 'Sending transaction…';
+    const tx = await c.submitOutcomeVote(betId, creatorWon);
+    const receipt = await tx.wait();
+    $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
+    $('actionStatus').textContent = '✅ Vote recorded';
+  }catch(e){
+    console.error('submitOutcomeVote error', e);
+    showError(e, 'actionStatus');
+  }finally{
+    [btnIWon, btnILost, btnPayout].forEach(b => { if (b) b.disabled = false; });
+  }
+}
+
+async function doRefund(){
+  const btn = $('btnRefund');
+  if (btn) btn.disabled = true;
+  $('actionStatus').textContent = 'Waiting for wallet…';
+
+  try{
+    try{
+      await ensureBase();
+      if (!signer) await connect();
+    }catch(e){
+      showError('❌ Please approve the request in your wallet, then try again.', 'actionStatus');
+      return;
+    }
+
+    const c = getContract();
+    const betId = requireBetId();
+
+    const b = await c.getChallenge(betId);
+    if (b[0] === ethers.ZeroAddress){
+      showError('❌ Challenge not found', 'actionStatus');
+      return;
+    }
+
+    const creator        = b[0];
     const opponent       = b[1];
     const joinDeadline   = Number(b[4]);
     const resolveDeadline= Number(b[5]);
@@ -2003,9 +1895,9 @@ async function doRefund(){
     }
 
     $('actionStatus').textContent = 'Sending transaction…';
-
     const tx = await c.issueRefund(betId);
     const receipt = await tx.wait();
+
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('actionStatus').textContent = '✅ Refund sent';
   }catch(e){
@@ -2019,7 +1911,6 @@ async function doRefund(){
 async function doPayout(){
   const btn = $('btnPayout');
   if (btn) btn.disabled = true;
-
   $('actionStatus').textContent = 'Waiting for wallet…';
 
   try{
@@ -2117,11 +2008,10 @@ window.addEventListener('DOMContentLoaded',()=>{
   $('btnRefund').onclick = doRefund;
   $('btnPayout').onclick = doPayout;
 
-    // Outcome voting: simple "I won" / "Opponent won" buttons
   const btnIWon  = $('btnIWon');
   const btnILost = $('btnILost');
-  if (btnIWon)  btnIWon.onclick  = ()=> doVote(true);   // I Won
-  if (btnILost) btnILost.onclick = ()=> doVote(false);  // Opponent Won
+  if (btnIWon)  btnIWon.onclick  = ()=> doVote(true);
+  if (btnILost) btnILost.onclick = ()=> doVote(false);
 
   $('btnShuffle').onclick = shuffleIdea;
 
