@@ -2056,8 +2056,9 @@ async function doRefund(){
 
     $('actionStatus').textContent = 'Sending transaction…';
 
-    const tx = await c.issueRefund(betId);
-    const receipt = await tx.wait();
+    const tx = await contract.issueRefund(challengeId);
+    await tx.wait();
+
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('actionStatus').textContent = '✅ Refund sent';
   }catch(e){
