@@ -1887,14 +1887,14 @@ async function doCreate(){
       $('betId').value = createdId;
       $('actionStatus').textContent = `Loaded challenge #${createdId}`;
     }catch(e){
-      console.warn('could not fetch nextBetId', e);
+      console.warn('could not fetch nextChallengeId', e);
     }
 
     const tabJoin = $('tabJoin');
     if (tabJoin) tabJoin.click();
 
   }catch(e){
-    console.error('createBet error', e);
+    console.error('openChallenge error', e);
     showError(e, 'createStatus'); // showError will handle network / revert messages
   }finally{
     if (btn) btn.disabled = false;
@@ -1919,7 +1919,7 @@ async function doJoin(){
     const c = getContract();
     const betId = requireBetId();
 
-    const b = await c.getBet(betId);
+    const b = await c.getChallenge(betId);
     if (b[0] === ethers.ZeroAddress){
       showError('❌ Challenge not found', 'actionStatus');
       return;
@@ -1941,12 +1941,12 @@ async function doJoin(){
 
     $('actionStatus').textContent = 'Sending transaction…';
 
-    const tx = await c.joinBet(betId, { value: stakeWei });
+    const tx = await c.joinChallenge(betId, { value: stakeWei });
     const receipt = await tx.wait();
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('actionStatus').textContent = '✅ Joined challenge';
   }catch(e){
-    console.error('joinBet error', e);
+    console.error('joinChallenge error', e);
     showError(e, 'actionStatus');
   }finally{
     if (btn) btn.disabled = false;
@@ -2003,7 +2003,7 @@ async function doVote(iWon){
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('actionStatus').textContent = '✅ Vote recorded';
   }catch(e){
-    console.error('confirmWinner error', e);
+    console.error('submitOutcomeVote error', e);
     showError(e, 'actionStatus');
   }finally{
     [btnIWon, btnILost, btnPayout].forEach(b => { if (b) b.disabled = false; });
@@ -2028,7 +2028,7 @@ async function doRefund(){
     const c = getContract();
     const betId = requireBetId();
 
-    const b = await c.getBet(betId);
+    const b = await c.getChallenge(betId);
     if (b[0] === ethers.ZeroAddress){
       showError('❌ Challenge not found', 'actionStatus');
       return;
@@ -2056,7 +2056,7 @@ async function doRefund(){
 
     $('actionStatus').textContent = 'Sending transaction…';
 
-    const tx = await c.refund(betId);
+    const tx = await c.issueRefund(betId);
     const receipt = await tx.wait();
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('actionStatus').textContent = '✅ Refund sent';
@@ -2086,7 +2086,7 @@ async function doPayout(){
     const c = getContract();
     const betId = requireBetId();
 
-    const b = await c.getBet(betId);
+    const b = await c.getChallenge(betId);
     if (b[0] === ethers.ZeroAddress){
       showError('❌ Challenge not found', 'actionStatus');
       return;
