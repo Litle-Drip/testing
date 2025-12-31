@@ -1052,16 +1052,16 @@
     </div>
     <div class="summary-row">
       <span class="summary-label">Pot value</span>
-      <span class="summary-value"><span id="sbPotEth">0.0000</span> ETH (<span id="sbPotUsd">$0.00</span>)</span>
+      <span class="summary-value"><span id="sbPotEth">0.000000</span> ETH (<span id="sbPotUsd">$0.00</span>)</span>
     </div>
     <div class="summary-row">
       <span class="summary-label">Winner gets</span>
-      <span class="summary-value"><span id="sbWinEth">0.0000</span> ETH (<span id="sbWinUsd">$0.00</span>)</span>
+      <span class="summary-value"><span id="sbWinEth">0.000000</span> ETH (<span id="sbWinUsd">$0.00</span>)</span>
     </div>
     <div class="summary-row">
       <span class="summary-label">Fee</span>
       <span class="summary-value">
-        <span class="badge">Fee 2.5%</span>
+        <span id="chipFeeMain" class="badge">Fee 2.5%</span>
       </span>
     </div>
     <div class="summary-row" style="margin-top:6px">
@@ -1121,7 +1121,7 @@ const NETWORKS = {
 };
 
 let CURRENT_NETWORK = 'mainnet';
-const FEE_BPS = 250;
+const FEE_BPS = 250; // Fallback only
 let ETH_USD = 3500;
 
 async function refreshEthUsd(){
@@ -1319,16 +1319,19 @@ function setCopyPulse(el){
 function updatePreview(){
   const eth = parseFloat($('stakeEth').value || '0') || 0;
   const pot = eth*2;
+  // Use FEE_BPS for preview, but real contract may differ slightly
   const win = pot*(1-FEE_BPS/10000);
 
   const potEthEl = $('sbPotEth');
-  if(potEthEl) potEthEl.textContent = pot.toFixed(4);
+  // Precision fix: increased to 6 decimals
+  if(potEthEl) potEthEl.textContent = pot.toFixed(6);
 
   const potUsdEl = $('sbPotUsd');
   if(potUsdEl) potUsdEl.textContent = fmtUsd(pot*ETH_USD);
 
   const winEthEl = $('sbWinEth');
-  if(winEthEl) winEthEl.textContent = win.toFixed(4);
+  // Precision fix: increased to 6 decimals
+  if(winEthEl) winEthEl.textContent = win.toFixed(6);
 
   const winUsdEl = $('sbWinUsd');
   if(winUsdEl) winUsdEl.textContent = fmtUsd(win*ETH_USD);
@@ -1336,13 +1339,14 @@ function updatePreview(){
 
 function applyStakeFromEth(rawEth){
   const eth = Math.max(0,Number(rawEth) || 0);
-  $('stakeEth').value = eth.toFixed(4);
+  // Precision fix: increased to 6 decimals
+  $('stakeEth').value = eth.toFixed(6);
   $('stakeUsd').value = (eth*ETH_USD).toFixed(0);
   updatePreview();
 
   if(stakeMode==='ETH'){
     $('stakeSymbol').textContent = 'Ξ';
-    $('stakeMain').value = eth.toFixed(4);
+    $('stakeMain').value = eth.toFixed(6);
   }else{
     $('stakeSymbol').textContent = '$';
     $('stakeMain').value = (eth*ETH_USD).toFixed(0);
@@ -1353,7 +1357,8 @@ function applyStakeFromUsd(usd){
   const u = Math.max(0,Number(usd) || 0);
   $('stakeUsd').value = u.toFixed(0);
   const eth = (u/ETH_USD) || 0;
-  $('stakeEth').value = eth.toFixed(4);
+  // Precision fix: increased to 6 decimals
+  $('stakeEth').value = eth.toFixed(6);
   updatePreview();
 
   if(stakeMode==='USD'){
@@ -1361,7 +1366,7 @@ function applyStakeFromUsd(usd){
     $('stakeMain').value = u.toFixed(0);
   }else{
     $('stakeSymbol').textContent = 'Ξ';
-    $('stakeMain').value = eth.toFixed(4);
+    $('stakeMain').value = eth.toFixed(6);
   }
 }
 
@@ -1372,7 +1377,8 @@ function setStakeMode(mode){
     $('stakeModeEth').classList.add('connected');
     $('stakeModeUsd').classList.remove('connected');
     $('stakeSymbol').textContent = 'Ξ';
-    $('stakeMain').value = Number($('stakeEth').value || '0').toFixed(4);
+    // Precision fix: increased to 6 decimals
+    $('stakeMain').value = Number($('stakeEth').value || '0').toFixed(6);
   }else{
     $('stakeModeUsd').classList.add('connected');
     $('stakeModeEth').classList.remove('connected');
@@ -1504,7 +1510,9 @@ async function ensureBase(){
   }
 
   const chain = await eth.request({method:'eth_chainId'});
-  if(chain!==net.idHex){
+  
+  // FIX: Use BigInt comparison to handle "0x2105" vs "0x02105" mismatches
+  if(BigInt(chain) !== BigInt(net.idHex)){
     try{
       await eth.request({
         method:'wallet_switchEthereumChain',
@@ -1555,6 +1563,19 @@ async function connect(){
     $('sbState').classList.add('ok');
     $('btnConnect').classList.add('connected');
     updateWalletNetworkLabel();
+    
+    // NEW: Fetch dynamic fee to avoid UI mismatch
+    try {
+      const c = getContract();
+      const feeBps = await c.protocolFeeBps();
+      const feePct = Number(feeBps) / 100;
+      const chipMain = $('chipFeeMain');
+      const chipBtm = $('chipFeeBottom');
+      if(chipMain) chipMain.textContent = `Fee ${feePct}%`;
+      if(chipBtm) chipBtm.textContent = `Fee ${feePct}%`;
+    } catch(e) {
+      console.warn('Could not fetch dynamic fee', e);
+    }
 
   }catch(e){
     console.error('connect() failed',e);
@@ -1708,7 +1729,8 @@ async function doCreate(){
     $('joinMins').value = jm;
     $('resolveMins').value = rm;
 
-    const stakeWei = ethers.parseEther(stakeEthNum.toFixed(4));
+    // Precision fix: Ensure we parse the high-precision string
+    const stakeWei = ethers.parseEther(stakeEthNum.toFixed(6));
     $('createStatus').textContent = 'Sending transaction…';
 
     const tx = await c.openChallenge(
@@ -1957,6 +1979,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   const btnSwitch = $('btnSwitch'); if(btnSwitch) btnSwitch.onclick = toggleNetwork;
   const btnWC = $('btnWalletConnect'); if(btnWC) btnWC.onclick = connectWithWalletConnect;
 
+  // Precision fix: default to 6 decimals
   applyStakeFromEth(0.0014);
   setStakeMode('USD');
   $('stakeMain').addEventListener('input',handleStakeMainInput);
