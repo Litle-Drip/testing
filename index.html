@@ -1,19 +1,14 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>The Juice — Crypto Escrow Challenges</title>
 
-  <!-- Libraries -->
-  <!-- QR Code -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <!-- Ethers v6 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <!-- WalletConnect (Required for the UGLY logic to work) -->
   <script src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.10.0/dist/index.umd.js"></script>
 
-  <!-- Styles -->
   <style>
     :root{
       --bg:#050608;
@@ -29,7 +24,7 @@
       --chip:#111114;
       --radius:18px;
       --fs:16px;
-      --accent-green:#16a34a; /* same green you already use */
+      --accent-green:#16a34a;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -157,10 +152,10 @@
       font-weight:500;
     }
     .chip.network-active{
-      border-color:var(--accent); /* Blue border */
-      color:var(--text); /* White text */
-      background:var(--chip); /* Dark background (matches most button backgrounds) */
-      box-shadow:var(--glow); /* Blue glow effect */
+      border-color:var(--accent);
+      color:var(--text);
+      background:var(--chip);
+      box-shadow:var(--glow);
     }
     .chip a{
       color:inherit;
@@ -176,8 +171,8 @@
     .subbar{
       display:flex;
       flex-direction:column;
-      gap:4px;          /* was 8px */
-      margin-bottom:2px;/* was 12px */
+      gap:4px;
+      margin-bottom:2px;
       max-width:520px;
       margin-left:auto;
       margin-right:auto;
@@ -194,8 +189,6 @@
       overflow:hidden;
       text-overflow:ellipsis;
       text-align:center;
-
-      /* NEW — clickable link styling */
       color:#ffffff !important;
       text-decoration:none !important;
       cursor:pointer;
@@ -207,42 +200,18 @@
       align-items:center;
       justify-content:space-between;
     }
-    .subchips-left{
-      display:flex;
-      flex-wrap:wrap;
-      gap:6px;
-      align-items:center;
-    }
-    .chip{
-      background:var(--chip);
-      border-radius:999px;
-      border:1px solid var(--border);
-      padding:5px 10px;
-      font-size:11px;
-      opacity:0.82;
-      color:var(--muted);
-      display:inline-flex;
-      align-items:center;
-      gap:4px;
-      white-space:nowrap;
-      cursor:default; /* will override below for clickable ones */
-    }
-
-    /* Add this immediately after the .chip block */
     .subchips .chip,
     .summary-card .chip{
       cursor:pointer;
     }
-
     .subchips .chip:hover,
     .summary-card .chip:hover{
       border-color:var(--accent);
       color:var(--accent);
     }
 
-    /* Warning below status */
     .network-warning-bar{
-      margin:0px auto 10px;   /* slightly closer to chips & tabs */
+      margin:0px auto 10px;
       font-size:12px;
       color:var(--muted);
       min-height:16px;
@@ -373,17 +342,17 @@
     }
     .idea-dice:hover{background:#18181b}
 
-        /* Stake Area */
+    /* Stake Area */
     .stake-area{
       margin-top:18px;
       margin-bottom:20px;
-      text-align:left;  /* align with Join / Resolve labels */
+      text-align:left;
     }
-        .stake-label{
+    .stake-label{
       font-size:13px;
       color:var(--muted);
       margin-bottom:4px;
-      text-align:left;  /* same alignment as other section labels */
+      text-align:left;
     }
     .stake-main{
       display:flex;
@@ -416,7 +385,6 @@
       line-height:1.05;
     }
 
-    /* Hide number input arrows */
     input[type="number"]::-webkit-inner-spin-button,
     input[type="number"]::-webkit-outer-spin-button{
       -webkit-appearance:none;
@@ -424,7 +392,6 @@
     }
     input[type="number"]{-moz-appearance:textfield}
 
-    /* Stake box */
     .stake-box{
       display:flex;
       align-items:center;
@@ -595,18 +562,6 @@
       text-align:center;
       margin-bottom:10px;
     }
-    .vote-grid{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:8px;
-      margin-bottom:12px;
-    }
-    .vote-column-title{
-      font-size:11px;
-      color:#a1a1aa;
-      text-align:center;
-      margin-bottom:6px;
-    }
     .vote-buttons{
       display:flex;
       flex-direction:column;
@@ -751,19 +706,20 @@
       font-size:11px;
     }
     .site-footer a:hover{text-decoration:underline}
-        /* Highlighted deadline inputs (15 and 30) */
+
     .deadline-highlight{
       background:#ffffff !important;  
       color:#000000 !important;
-      border:2px solid var(--accent) !important; /* BLUE outline */
+      border:2px solid var(--accent) !important;
       border-radius:40px !important;
     }
     .deadline-highlight:focus{
       background:#ffffff !important;
       color:#000000 !important;
-      border-color:var(--accent) !important; /* BLUE on focus */
+      border-color:var(--accent) !important;
     }
-    /* ---------- ERROR MODAL ---------- */
+    
+    /* Error Modal */
     .error-modal{
       position:fixed;
       inset:0;
@@ -806,9 +762,7 @@
       font-size:16px;
       padding:2px 4px;
     }
-    .error-modal-close:hover{
-      color:var(--text);
-    }
+    .error-modal-close:hover{color:var(--text)}
     .error-modal-body{
       font-size:13px;
       color:var(--muted);
@@ -817,154 +771,106 @@
       word-break:break-word;
       margin-top:4px;
     }
-/* ---------- END MODAL ---------- */
 
     @media(max-width:640px){
-        /* HEADER LAYOUT ON MOBILE */
-    .topbar{
-      flex-direction:column;
-      align-items:flex-start;
-      justify-content:flex-start;
-      gap:6px;
-      padding:0 8px;
-      width:100%;
+      .topbar{
+        flex-direction:column;
+        align-items:flex-start;
+        justify-content:flex-start;
+        gap:6px;
+        padding:0 8px;
+        width:100%;
+      }
+      .top-actions{
+        display:flex;
+        flex-direction:row;
+        flex-wrap:wrap;
+        justify-content:flex-start;
+        align-items:center;
+        gap:6px;
+        width:100%;
+      }
+      .top-actions .btn{
+        padding:4px 10px;
+        font-size:11px;
+        white-space:nowrap;
+        flex-shrink:1;
+      }
+      .addr{
+        font-size:10px;
+        white-space:normal;
+        overflow:visible;
+        text-overflow:clip;
+        line-height:1.3;
+        padding:6px 10px;
+        color:#ffffff !important;
+        text-decoration:none !important;
+        cursor:pointer;
+      }
+      .app{padding:14px 12px 28px}
+      .card{padding:16px}
+      .subbar{padding:0 8px}
+      .subchips{
+        display:flex;
+        flex-direction:row;
+        flex-wrap:nowrap;
+        align-items:center;
+        justify-content:center;
+        gap:6px;
+      }
+      .subchips .chip{
+        width:auto;
+        margin-bottom:0;
+        padding:4px 8px;
+        font-size:10px;
+        white-space:nowrap;
+        justify-content:center;
+      }
+      .quick-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .stake-amount{font-size:28px;min-width:80px}
+      .stake-main{
+        flex-wrap:wrap;
+        justify-content:center;
+        align-items:center;
+        gap:12px;
+      }
+      .stake-box{
+        width:210px;
+        padding:8px 12px;
+        border-radius:18px;
+      }
+      .stake-box .stake-symbol{font-size:22px}
+      .stake-box .stake-amount{width:100px;max-width:100px;font-size:24px}
+      .stake-adjust{margin-right:0}
+      .stake-adjust,.stake-toggle{margin-left:0}
+      .stake-toggle{
+        flex-direction:row;
+        justify-content:center;
+        width:100%;
+        gap:8px;
+      }
+      .stake-toggle button{flex:1;max-width:120px}
+      .site-footer{
+        flex-direction:row;
+        align-items:center;
+        justify-content:space-between;
+        text-align:left;
+        padding:12px 16px;
+        margin:24px auto 32px;
+      }
+      .site-footer nav{
+        display:flex;
+        flex-direction:row;
+        align-items:center;
+        gap:12px;
+        flex-wrap:wrap;
+      }
+      .site-footer a{margin:0}
     }
-
-    .top-actions{
-      display:flex;
-      flex-direction:row;
-      flex-wrap:wrap;        /* allow a clean wrap if needed */
-      justify-content:flex-start;
-      align-items:center;
-      gap:6px;
-      width:100%;
-    }
-
-    .top-actions .btn{
-      padding:4px 10px;
-      font-size:11px;
-      white-space:nowrap;
-      flex-shrink:1;
-    }
-        /* Smaller, multiline contract pill on mobile */
-    .addr{
-      font-size:10px;
-      white-space:normal;
-      overflow:visible;
-      text-overflow:clip;
-      line-height:1.3;
-      padding:6px 10px;
-
-      /* NEW — clickable link styling */
-      color:#ffffff !important;
-      text-decoration:none !important;
-      cursor:pointer;
-    }
-
-    /* keep the rest of your existing mobile rules below this */
-    .app{
-      padding:14px 12px 28px;
-    }
-    .card{
-      padding:16px;
-    }
-    /* One-line layout for network / fee / contract chips on mobile */
-    .subbar{
-      padding:0 8px;
-    }
-
-    .subchips{
-      display:flex;
-      flex-direction:row;   /* all on one row */
-      flex-wrap:nowrap;     /* don't wrap */
-      align-items:center;
-      justify-content:center;
-      gap:6px;
-    }
-
-    .subchips-left{
-      display:flex;
-      flex-direction:row;   /* row instead of column */
-      flex-wrap:nowrap;
-      align-items:center;
-      width:auto;           /* let content size itself */
-    }
-
-    .subchips .chip{
-      width:auto;           /* no full-width chips */
-      margin-bottom:0;
-      padding:4px 8px;      /* smaller for mobile */
-      font-size:10px;
-      white-space:nowrap;   /* keep labels on one line */
-      justify-content:center;
-    }
-    .quick-row{
-      grid-template-columns:repeat(2,minmax(0,1fr));
-    }
-    .stake-amount{
-      font-size:28px;
-      min-width:80px;
-    }
-    .stake-main{
-      flex-wrap:wrap;
-      justify-content:center;
-      align-items:center;
-      gap:12px;
-    }
-    .stake-box{
-      width:210px;
-      padding:8px 12px;
-      border-radius:18px;
-    }
-    .stake-box .stake-symbol{
-    font-size:22px;
-    }
-    .stake-box .stake-amount{
-      width:100px;
-      max-width:100px;
-      font-size:24px;
-    }
-    .stake-adjust{
-      margin-right:0;
-    }
-    .stake-adjust,
-    .stake-toggle{
-      margin-left:0;
-    }
-    .stake-toggle{
-      flex-direction:row;
-      justify-content:center;
-      width:100%;
-      gap:8px;
-    }
-    .stake-toggle button{
-      flex:1;
-      max-width:120px;
-    }
-    .site-footer{
-      flex-direction:row;
-      align-items:center;
-      justify-content:space-between;
-      text-align:left;
-      padding:12px 16px;
-      margin:24px auto 32px;
-    }
-    .site-footer nav{
-      display:flex;
-       flex-direction:row;
-      align-items:center;
-      gap:12px;
-      flex-wrap:wrap;
-    }
-    .site-footer a{
-      margin:0;
-    }
-  }
   </style>
 </head>
 <body>
 <div class="app">
-  <!-- Header -->
   <header class="topbar">
     <div class="brand">
       <div class="brand-logo">
@@ -991,13 +897,11 @@
     ⚠️ Base Mainnet — Real ETH. Start with small stakes.
   </div>
 
-  <!-- Tabs -->
   <div class="tabs">
     <button id="tabCreate" class="tab active">Create Challenge</button>
     <button id="tabJoin" class="tab">Join &amp; Resolve</button>
   </div>
 
-  <!-- Create panel -->
   <div id="panelCreate" class="panel active">
     <div class="card">
       <div class="card-header">
@@ -1005,13 +909,11 @@
       </div>
       <div class="card-sub">Set the Challenge, deadlines, and fund the escrow in one step.</div>
 
-      <!-- Idea text bar -->
       <div class="idea-row">
         <input id="ideaBox" class="idea-input" type="text" value="Click 🎲 to generate a random challenge idea!"/>
         <button id="btnShuffle" class="idea-dice" aria-label="Random bet idea">🎲</button>
       </div>
 
-      <!-- Stake area -->
       <div class="stake-area">
         <div class="stake-label">Challenge Amount</div>
         <div class="stake-main">
@@ -1030,7 +932,6 @@
           </div>
         </div>
 
-        <!-- Hidden inputs from UGLY logic (Required) -->
         <input id="stakeEth" type="hidden" value="0.0014"/>
         <input id="stakeUsd" type="hidden" value="5"/>
 
@@ -1042,7 +943,6 @@
         </div>
       </div>
 
-      <!-- Join deadline -->
       <div style="margin-top:14px">
         <div class="label">Join Deadline</div>
         <div class="row wrap">
@@ -1062,7 +962,6 @@
         </div>
       </div>
 
-      <!-- Resolve deadline -->
       <div style="margin-top:12px">
         <div class="label">Resolve deadline</div>
         <div class="row wrap">
@@ -1084,7 +983,6 @@
 
       <div class="footer-note" id="usdNote">USD values are estimates only.</div>
 
-      <!-- Actions -->
       <div class="row" style="margin-top:16px;gap:10px">
         <button id="btnCreate" class="btn accent" style="flex:1">Create &amp; Fund</button>
         <button id="btnReset" class="btn" style="min-width:90px">Reset</button>
@@ -1094,24 +992,20 @@
     </div>
   </div>
 
-  <!-- Join / Resolve panel -->
   <div id="panelJoin" class="panel">
     <div class="card">
       <div id="resolveNote" class="card-sub">Paste a Challenge ID to join, refund, or finalize.</div>
 
-      <!-- Challenge ID -->
       <div class="join-input-row row">
         <input id="betId" class="input join-input" placeholder="Paste Challenge ID…"/>
         <button class="btn-clear" onclick="document.getElementById('betId').value=''">Clear</button>
       </div>
 
-      <!-- Join / refund -->
       <div class="stack" style="margin-top:8px">
         <button id="btnJoin" class="btn primary" style="width:100%">Join Challenge</button>
         <button id="btnRefund" class="btn ghost" style="width:100%">Request Refund</button>
       </div>
 
-            <!-- Resolve winner -->
       <div class="resolve-section">
         <div class="resolve-title">Resolve winner</div>
         <div class="resolve-sub">
@@ -1132,7 +1026,6 @@
       <div id="newBetNote" class="status" style="text-align:center;display:none">🆕 New Challenge link prepared — share the QR!</div>
     </div>
 
-    <!-- Share / QR -->
     <div class="share-card">
       <div class="share-title">Share link &amp; QR</div>
       <div class="share-help">Send this link or QR to your opponent so they open the exact Challenge</div>
@@ -1151,7 +1044,6 @@
     </div>
   </div>
 
-  <!-- Summary footer -->
   <div class="summary-card">
     <div class="summary-top">
       <div id="sbState" class="state-pill">Not connected</div>
@@ -1160,16 +1052,16 @@
     </div>
     <div class="summary-row">
       <span class="summary-label">Pot value</span>
-      <span class="summary-value"><span id="sbPotEth">0.0000</span> ETH (<span id="sbPotUsd">$0.00</span>)</span>
+      <span class="summary-value"><span id="sbPotEth">0.000000</span> ETH (<span id="sbPotUsd">$0.00</span>)</span>
     </div>
     <div class="summary-row">
       <span class="summary-label">Winner gets</span>
-      <span class="summary-value"><span id="sbWinEth">0.0000</span> ETH (<span id="sbWinUsd">$0.00</span>)</span>
+      <span class="summary-value"><span id="sbWinEth">0.000000</span> ETH (<span id="sbWinUsd">$0.00</span>)</span>
     </div>
     <div class="summary-row">
       <span class="summary-label">Fee</span>
       <span class="summary-value">
-        <span class="badge">Fee 2.5%</span>
+        <span id="chipFeeMain" class="badge">Fee 2.5%</span>
       </span>
     </div>
     <div class="summary-row" style="margin-top:6px">
@@ -1179,30 +1071,26 @@
     <div class="help-line">Refunds are fee-free if deadlines pass.</div>
   </div>
 
-    <footer class="site-footer">
-    <div>© <span id="yearNow"></span> The Juice Labs</div>
+  <footer class="site-footer">
+    <div>© <span id="yearNow"></span> Edison Labs LLC • Experimental software. Use at your own risk.</div>
     <nav>
-      <a href="terms.html">Terms</a>
-      <a href="privacy.html">Privacy</a>
-      <a href="risk.html">Risk</a>
+      <a href="about.html">About</a>
+      <a href="terms.html">Terms of Use</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="risk.html">Risk Disclosure</a>
+      <a href="faq.html">FAQ</a>
     </nav>
   </footer>
 
-  <!-- Error modal -->
   <div id="errorModal" class="error-modal">
     <div class="error-modal-backdrop" onclick="closeErrorModal()"></div>
     <div class="error-modal-card">
       <div class="error-modal-header">
         <span>Error</span>
-        <button type="button"
-                class="error-modal-close"
-                onclick="closeErrorModal()">✕</button>
+        <button type="button" class="error-modal-close" onclick="closeErrorModal()">✕</button>
       </div>
       <div id="errorModalMessage" class="error-modal-body"></div>
-      <button type="button"
-              class="btn accent"
-              style="width:100%;margin-top:12px"
-              onclick="closeErrorModal()">
+      <button type="button" class="btn accent" style="width:100%;margin-top:12px" onclick="closeErrorModal()">
         Got it
       </button>
     </div>
@@ -1235,8 +1123,7 @@ const NETWORKS = {
 };
 
 let CURRENT_NETWORK = 'mainnet';
-
-const FEE_BPS = 250;
+const FEE_BPS = 250; // Fallback only
 let ETH_USD = 3500;
 
 async function refreshEthUsd(){
@@ -1247,17 +1134,13 @@ async function refreshEthUsd(){
     if(!isNaN(price) && price>0){
       ETH_USD = price;
       const note = $('usdNote');
-      if(note){
-        note.textContent = `USD values use ETH ≈ $${price.toFixed(2)} (preview only).`;
-      }
+      if(note) note.textContent = `USD values use ETH ≈ $${price.toFixed(2)} (preview only).`;
       updatePreview();
       return;
     }
   }catch(e){}
   const note = $('usdNote');
-  if(note){
-    note.textContent = 'USD values are estimates only and may be outdated.';
-  }
+  if(note) note.textContent = 'USD values are estimates only and may be outdated.';
 }
 
 function currentBase(){return NETWORKS[CURRENT_NETWORK];}
@@ -1284,9 +1167,7 @@ function applyNetworkUI(){
 
   const switchBtn = $('btnSwitch');
   if(switchBtn){
-    switchBtn.textContent = (CURRENT_NETWORK==='mainnet')
-      ? 'Use Base Sepolia'
-      : 'Use Base Mainnet';
+    switchBtn.textContent = (CURRENT_NETWORK==='mainnet') ? 'Use Base Sepolia' : 'Use Base Mainnet';
   }
   updateWalletNetworkLabel();
 }
@@ -1294,16 +1175,13 @@ function applyNetworkUI(){
 async function updateWalletNetworkLabel(){
   const el = $('sbWalletNet');
   if(!el) return;
-
   if(!provider){
     el.textContent = 'Wallet: not connected';
     return;
   }
-
   try{
     const net = await provider.getNetwork();
     const chainId = Number(net.chainId.toString());
-
     let label;
     if(chainId===8453){
       label = 'Wallet: Base Mainnet (8453)';
@@ -1312,7 +1190,6 @@ async function updateWalletNetworkLabel(){
     }else{
       label = `Wallet: chainId ${chainId}`;
     }
-
     el.textContent = label;
 
     const chipTop = $('chipNetwork');
@@ -1353,7 +1230,6 @@ function openErrorModal(message){
   const modal = $('errorModal');
   const msgEl = $('errorModalMessage');
   if (!modal || !msgEl) return;
-
   msgEl.textContent = message;
   modal.classList.add('visible');
 }
@@ -1363,12 +1239,7 @@ function closeErrorModal(){
   if (modal) modal.classList.remove('visible');
 }
 
-/**
- * Show an error in the inline status area AND in the popup.
- * targetId is "createStatus" or "actionStatus".
- */
 function showError(message, targetId){
-  // Normalize to a plain string
   let msg = '';
   if (message == null){
     msg = '';
@@ -1385,25 +1256,14 @@ function showError(message, targetId){
   }
 
   const lower = msg.toLowerCase();
-
-  // If we hit the classic ethers "missing revert data / CALL_EXCEPTION" case,
-  // show a friendly "switch networks" message instead.
   if (lower.includes('missing revert data') || lower.includes('call_exception')){
     let netLabel = 'Base';
     try {
-      const net = currentBase(); // uses CURRENT_NETWORK + NETWORKS
-      netLabel = (net.key === 'mainnet')
-        ? 'Base Mainnet (chain 8453)'
-        : 'Base Sepolia Testnet (chain 84532)';
-    } catch(e) {
-      // fall back to generic
-    }
-
-    msg =
-      '❌ Your wallet rejected this transaction or is on the wrong network.\n\n' +
-      `Open your wallet and switch to ${netLabel}, then try again.`;
+      const net = currentBase();
+      netLabel = (net.key === 'mainnet') ? 'Base Mainnet (chain 8453)' : 'Base Sepolia Testnet (chain 84532)';
+    } catch(e) {}
+    msg = '❌ Your wallet rejected this transaction or is on the wrong network.\n\n' + `Open your wallet and switch to ${netLabel}, then try again.`;
   } else {
-    // Ensure we always prefix with ❌ for other errors
     if (!msg.startsWith('❌')){
       msg = '❌ ' + msg;
     }
@@ -1461,31 +1321,34 @@ function setCopyPulse(el){
 function updatePreview(){
   const eth = parseFloat($('stakeEth').value || '0') || 0;
   const pot = eth*2;
+  // Use FEE_BPS for preview, but real contract may differ slightly
   const win = pot*(1-FEE_BPS/10000);
 
   const potEthEl = $('sbPotEth');
-  if(potEthEl) potEthEl.textContent = pot.toFixed(4);
+  // Precision fix: increased to 6 decimals
+  if(potEthEl) potEthEl.textContent = pot.toFixed(6);
 
   const potUsdEl = $('sbPotUsd');
   if(potUsdEl) potUsdEl.textContent = fmtUsd(pot*ETH_USD);
 
   const winEthEl = $('sbWinEth');
-  if(winEthEl) winEthEl.textContent = win.toFixed(4);
+  // Precision fix: increased to 6 decimals
+  if(winEthEl) winEthEl.textContent = win.toFixed(6);
 
   const winUsdEl = $('sbWinUsd');
   if(winUsdEl) winUsdEl.textContent = fmtUsd(win*ETH_USD);
 }
 
-/* Hidden fields kept in ETH and USD */
 function applyStakeFromEth(rawEth){
   const eth = Math.max(0,Number(rawEth) || 0);
-  $('stakeEth').value = eth.toFixed(4);
+  // Precision fix: increased to 6 decimals
+  $('stakeEth').value = eth.toFixed(6);
   $('stakeUsd').value = (eth*ETH_USD).toFixed(0);
   updatePreview();
 
   if(stakeMode==='ETH'){
     $('stakeSymbol').textContent = 'Ξ';
-    $('stakeMain').value = eth.toFixed(4);
+    $('stakeMain').value = eth.toFixed(6);
   }else{
     $('stakeSymbol').textContent = '$';
     $('stakeMain').value = (eth*ETH_USD).toFixed(0);
@@ -1496,7 +1359,8 @@ function applyStakeFromUsd(usd){
   const u = Math.max(0,Number(usd) || 0);
   $('stakeUsd').value = u.toFixed(0);
   const eth = (u/ETH_USD) || 0;
-  $('stakeEth').value = eth.toFixed(4);
+  // Precision fix: increased to 6 decimals
+  $('stakeEth').value = eth.toFixed(6);
   updatePreview();
 
   if(stakeMode==='USD'){
@@ -1504,7 +1368,7 @@ function applyStakeFromUsd(usd){
     $('stakeMain').value = u.toFixed(0);
   }else{
     $('stakeSymbol').textContent = 'Ξ';
-    $('stakeMain').value = eth.toFixed(4);
+    $('stakeMain').value = eth.toFixed(6);
   }
 }
 
@@ -1515,7 +1379,8 @@ function setStakeMode(mode){
     $('stakeModeEth').classList.add('connected');
     $('stakeModeUsd').classList.remove('connected');
     $('stakeSymbol').textContent = 'Ξ';
-    $('stakeMain').value = Number($('stakeEth').value || '0').toFixed(4);
+    // Precision fix: increased to 6 decimals
+    $('stakeMain').value = Number($('stakeEth').value || '0').toFixed(6);
   }else{
     $('stakeModeUsd').classList.add('connected');
     $('stakeModeEth').classList.remove('connected');
@@ -1524,7 +1389,6 @@ function setStakeMode(mode){
   }
 }
 
-/* ---------- Stake input wiring ---------- */
 function handleStakeMainInput(){
   const raw = $('stakeMain').value;
   if(stakeMode==='ETH'){
@@ -1536,45 +1400,47 @@ function handleStakeMainInput(){
 
 /* ---------- Bet ideas ---------- */
 const IDEAS = [
-  "Basketball 🏀 : Make a 3-point shot from the top of the key",
-  "Darts 🎯 : Hit any double in 3 throws",
-  "Darts 🎯 : You vs Me",
-  "Darts 🎯 : Bullseye",
-  "Drink 🥛 : Chug under 1 minute",
-  "Hockey 🥅 : Hit the crossbar",
-  "Lacrosse 🥍 : Top right corner",
-  "Human 🥇 : No way!",
-  "Human 🥇 : I bet you can't",
-  "Cornhole 🥇 : 2 in a row",
-  "Bottle Flip 🍼 : 3 out of 5",
-  "Soccer ⚽️ : Crossbar in 3 tries",
-  "Golf ⛳️ : Hole in one!",
-  "Golf 🏌️‍♂️ : 3-putt?",
-  "Golf 🏌️‍♂️ : 2-putt or better",
-  "Golf 🏌️‍♂️ : Long-drive contest",
-  "Golf 🏌️‍♂️ : Closest to the pin",
-  "Ping pong 🏓 : Race to 11",
+  "Basketball 🏀: Make a 3",
+  "Darts 🎯: Hit any double in 3 throws",
+  "Darts 🎯: You vs Me",
+  "Darts 🎯: Bullseye",
+  "Drink 🥛: Chug under 1 minute",
+  "Hockey 🥅: Hit the crossbar",
+  "Lacrosse 🥍: Top right corner",
+  "Human 🥇: No way you can..!",
+  "Human 🥇: I bet you can't",
+  "Cornhole 🥇: 2 in a row",
+  "Bottle Flip 🍼: 3 out of 5",
+  "Soccer ⚽️: Crossbar in 3 tries",
+  "Golf ⛳️: Hole in one!",
+  "Golf 🏌️‍♂️: 3-putt?",
+  "Golf 🏌️‍♂️: 2-putt or better",
+  "Golf 🏌️‍♂️: Long-drive",
+  "Golf 🏌️‍♂️: On the Green",
+  "Golf 🏌️‍♂️: Closest to the pin",
+  "Ping pong 🏓: First to 11",
   "🥅 First to 3 goals 🥅",
-  "Next hole ⛳️ : low score wins",
-  "Basketball 🏀 : Next free throw 🏀",
-  "BasketBall ⛹️ : You vs me",
+  "Next hole ⛳️: low score wins",
+  "Basketball 🏀: Next free throw 🏀",
+  "BasketBall ⛹️: You vs Me",
   "🏈 Next field goal attempt 🏈",
   "⚽️ Penalty kick showdown ⚽️",
   "💰 Coin flip, best of 3",
   "✂️ Rock–paper–scissors 🗒️",
   "Dice 🎲",
-  "Bowling 🎳 : Perfect Game",
-  "Bowling 🎳 : You vs me",
-  "Chess ♟️ : You vs me",
-  "Video Game 🎮 : You vs me",
-  "Pool 🎱 : Team 1 vs Team 2",
-  "Ping Pong 🏓 : You vs me",
-  "Badminton 🏸 : Team 1 vs Team 2",
-  "Tennis 🎾 : Team 1 vs Team 2",
-  "Volleyball 🏐 : Team 1 vs Team 2",
-  "Baseball ⚾️ : Team 1 vs Team 2",
-  "Softball 🥎 : Team 1 vs Team 2",
-  "Archery 🏹 : Best score"
+  "Bowling 🎳: Perfect Game",
+  "Bowling 🎳: You vs Me",
+  "Chess ♟️: You vs Me",
+  "Video Game 🎮: You vs Me",
+  "Pool 🎱: Team 1 vs Team 2",
+  "Ping Pong 🏓: You vs Me",
+  "Badminton 🏸: Team 1 vs Team 2",
+  "Tennis 🎾: Team 1 vs Team 2",
+  "Volleyball 🏐: Team 1 vs Team 2",
+  "Baseball ⚾️: Team 1 vs Team 2",
+  "Softball 🥎: Team 1 vs Team 2",
+  "Archery 🏹: Best score",
+  "1v1"
 ];
 
 function shuffleIdea(){
@@ -1596,7 +1462,6 @@ function startNewBet(){
 
 /* ---------- ABI ---------- */
 const ABI = [
-  // --- Read-only views ---
   'function getChallenge(uint256 challengeId) view returns (address challenger, address participant, uint256 stakeWei, uint16 feeBps, uint64 joinDeadline, uint64 resolveDeadline, uint64 createdAt, uint8 state, int8 challengerVote, int8 participantVote)',
   'function nextChallengeId() view returns (uint256)',
   'function protocolFeeBps() view returns (uint16)',
@@ -1606,15 +1471,11 @@ const ABI = [
   'function MIN_REFUND_PENALTY_BPS() view returns (uint16)',
   'function MAX_REFUND_PENALTY_BPS() view returns (uint16)',
   'function paused() view returns (bool)',
-
-  // --- Core challenge actions ---
   'function openChallenge(uint256 stakeWei, uint16 feeBps, uint64 joinWindowSeconds, uint64 resolveWindowSeconds) payable returns (uint256 challengeId)',
   'function joinChallenge(uint256 challengeId) payable',
   'function submitOutcomeVote(uint256 challengeId, bool challengerWon)',
   'function resolveChallenge(uint256 challengeId)',
   'function issueRefund(uint256 challengeId)',
-
-  // --- Owner / treasury only (you’ll use these from Etherscan, not the UI) ---
   'function setProtocolFeeBps(uint16 newFeeBps)',
   'function setRefundPenaltyBps(uint16 newPenaltyBps)',
   'function setPaused(bool paused_)',
@@ -1624,7 +1485,7 @@ const ABI = [
 /* ---------- Wallet / ethers ---------- */
 let provider,signer;
 let wcProvider = null;
-let activeConnector = 'injected'; // 'injected' or 'walletconnect'
+let activeConnector = 'injected';
 const WC_PROJECT_ID = '0a7260b6b9e686ea7a8bcd57085eac0e';
 
 function getEth(){
@@ -1641,13 +1502,11 @@ async function ensureBase(){
   const net = currentBase();
   const expectedChainId = net.key==='mainnet' ? 8453 : 84532;
 
-  // If we're using WalletConnect, keep that session on the right chain
   if (activeConnector === 'walletconnect' && wcProvider) {
     await ensureWalletOnChain(wcProvider, expectedChainId);
     return;
   }
 
-  // Default: injected wallet (MetaMask / Coinbase / Brave)
   const eth = getEth();
   if(!eth){
     alert('Wallet not found (MetaMask / Coinbase / Brave).');
@@ -1655,7 +1514,9 @@ async function ensureBase(){
   }
 
   const chain = await eth.request({method:'eth_chainId'});
-  if(chain!==net.idHex){
+  
+  // FIX: Use BigInt comparison to handle "0x2105" vs "0x02105" mismatches
+  if(BigInt(chain) !== BigInt(net.idHex)){
     try{
       await eth.request({
         method:'wallet_switchEthereumChain',
@@ -1706,6 +1567,19 @@ async function connect(){
     $('sbState').classList.add('ok');
     $('btnConnect').classList.add('connected');
     updateWalletNetworkLabel();
+    
+    // NEW: Fetch dynamic fee to avoid UI mismatch
+    try {
+      const c = getContract();
+      const feeBps = await c.protocolFeeBps();
+      const feePct = Number(feeBps) / 100;
+      const chipMain = $('chipFeeMain');
+      const chipBtm = $('chipFeeBottom');
+      if(chipMain) chipMain.textContent = `Fee ${feePct}%`;
+      if(chipBtm) chipBtm.textContent = `Fee ${feePct}%`;
+    } catch(e) {
+      console.warn('Could not fetch dynamic fee', e);
+    }
 
   }catch(e){
     console.error('connect() failed',e);
@@ -1834,18 +1708,15 @@ async function doCreate(){
   $('createStatus').textContent = 'Waiting for wallet…';
 
   try{
-    // 1) Make sure wallet is on the right network and connected.
     try{
       await ensureBase();
       if (!signer) await connect();
     }catch(e){
-      // User probably canceled network switch or connect
       showError('❌ Please approve the request in your wallet, then try again.', 'createStatus');
       return;
     }
 
     const c = getContract();
-
     const stakeEthStr = String($('stakeEth').value || '0');
     const stakeEthNum = Number(stakeEthStr);
     if (!Number.isFinite(stakeEthNum) || stakeEthNum <= 0){
@@ -1862,8 +1733,8 @@ async function doCreate(){
     $('joinMins').value = jm;
     $('resolveMins').value = rm;
 
-    const stakeWei = ethers.parseEther(stakeEthNum.toFixed(4));
-
+    // Precision fix: Ensure we parse the high-precision string
+    const stakeWei = ethers.parseEther(stakeEthNum.toFixed(6));
     $('createStatus').textContent = 'Sending transaction…';
 
     const tx = await c.openChallenge(
@@ -1875,17 +1746,15 @@ async function doCreate(){
     );
 
     $('createStatus').textContent = '⏳ Transaction sent, waiting for confirmation…';
-
     const receipt = await tx.wait();
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('createStatus').textContent = '✅ Challenge created!';
 
-    // Derive the new bet id from nextBetId()
     try{
       const nextId = await c.nextChallengeId();
       const betId = BigInt(nextId) - 1n;
-      $('betId').value = createdId;
-      $('actionStatus').textContent = `Loaded challenge #${createdId}`;
+      $('betId').value = betId.toString();
+      $('actionStatus').textContent = `Loaded challenge #${betId}`;
     }catch(e){
       console.warn('could not fetch nextChallengeId', e);
     }
@@ -1895,7 +1764,7 @@ async function doCreate(){
 
   }catch(e){
     console.error('openChallenge error', e);
-    showError(e, 'createStatus'); // showError will handle network / revert messages
+    showError(e, 'createStatus');
   }finally{
     if (btn) btn.disabled = false;
   }
@@ -1959,7 +1828,6 @@ async function doVote(iWon){
   const btnPayout = $('btnPayout');
 
   [btnIWon, btnILost, btnPayout].forEach(b => { if (b) b.disabled = true; });
-
   $('actionStatus').textContent = 'Waiting for wallet…';
 
   try{
@@ -1974,7 +1842,7 @@ async function doVote(iWon){
     const c = getContract();
     const betId = requireBetId();
 
-    const bet = await c.getChallenge(betId);
+    const b = await c.getChallenge(betId);
     if (b[0] === ethers.ZeroAddress){
       showError('❌ Challenge not found', 'actionStatus');
       return;
@@ -1997,8 +1865,7 @@ async function doVote(iWon){
     }
 
     $('actionStatus').textContent = 'Sending transaction…';
-
-    const tx = await c.joinChallenge(betId, { value: bet[2] });
+    const tx = await c.submitOutcomeVote(betId, creatorWon);
     const receipt = await tx.wait();
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('actionStatus').textContent = '✅ Vote recorded';
@@ -2013,7 +1880,6 @@ async function doVote(iWon){
 async function doRefund(){
   const btn = $('btnRefund');
   if (btn) btn.disabled = true;
-
   $('actionStatus').textContent = 'Waiting for wallet…';
 
   try{
@@ -2055,9 +1921,8 @@ async function doRefund(){
     }
 
     $('actionStatus').textContent = 'Sending transaction…';
-
-    const tx = await contract.issueRefund(challengeId);
-    await tx.wait();
+    const tx = await c.issueRefund(betId);
+    const receipt = await tx.wait();
 
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('actionStatus').textContent = '✅ Refund sent';
@@ -2072,7 +1937,6 @@ async function doRefund(){
 async function doPayout(){
   const btn = $('btnPayout');
   if (btn) btn.disabled = true;
-
   $('actionStatus').textContent = 'Waiting for wallet…';
 
   try{
@@ -2119,6 +1983,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   const btnSwitch = $('btnSwitch'); if(btnSwitch) btnSwitch.onclick = toggleNetwork;
   const btnWC = $('btnWalletConnect'); if(btnWC) btnWC.onclick = connectWithWalletConnect;
 
+  // Precision fix: default to 6 decimals
   applyStakeFromEth(0.0014);
   setStakeMode('USD');
   $('stakeMain').addEventListener('input',handleStakeMainInput);
@@ -2170,11 +2035,10 @@ window.addEventListener('DOMContentLoaded',()=>{
   $('btnRefund').onclick = doRefund;
   $('btnPayout').onclick = doPayout;
 
-    // Outcome voting: simple "I won" / "Opponent won" buttons
   const btnIWon  = $('btnIWon');
   const btnILost = $('btnILost');
-  if (btnIWon)  btnIWon.onclick  = ()=> doVote(true);   // I Won
-  if (btnILost) btnILost.onclick = ()=> doVote(false);  // Opponent Won
+  if (btnIWon)  btnIWon.onclick  = ()=> doVote(true);
+  if (btnILost) btnILost.onclick = ()=> doVote(false);
 
   $('btnShuffle').onclick = shuffleIdea;
 
