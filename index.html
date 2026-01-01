@@ -1244,6 +1244,232 @@ async function toggleNetwork(){
 const $ = id => document.getElementById(id);
 const fmtUsd = v => '$' + v.toFixed(2);
 
+/* ---------- Smart status + outcome messaging ---------- */
+function nowSec(){ return Math.floor(Date.now()/1000); }
+
+function shortAddr(a){
+  if(!a) return '';
+  return a.slice(0,6) + '…' + a.slice(-4);
+}
+
+function fmtTimeFromSec(ts){
+  if(!ts || ts<=0) return '';
+  try{
+    const d = new Date(ts*1000);
+    return d.toLocaleString();
+  }catch{
+    return String(ts);
+  }
+}
+
+function txLink(hash){
+  const net = currentBase();
+  return `${net.explorer}/tx/${hash}`;
+}
+
+function setStatus(targetId, msg){
+  const el = $(targetId);
+  if(el) el.textContent = msg || '';
+}
+
+async function readChallenge(betId){
+  const c = getContract();
+  const b = await c.getChallenge(betId);
+  // ABI: (challenger, participant, stakeWei, feeBps, joinDeadline, resolveDeadline, createdAt, state, challengerVote, participantVote)
+  return {
+    challenger: b[0],
+    participant: b[1],
+    stakeWei: b[2],
+    feeBps: Number(b[3]),
+    joinDeadline: Number(b[4]),
+    resolveDeadline: Number(b[5]),
+    createdAt: Number(b[6]),
+    state: Number(b[7]),
+    challengerVote: Number(b[8]),
+    participantVote: Number(b[9]),
+  };
+}
+
+// vote encoding: your contract stores int8; most common pattern is:
+//  0 = none
+//  1 = challenger won (true)
+// -1 = challenger lost (false)
+function voteLabel(v){
+  if(v === 0) return 'No vote yet';
+  if(v === 1) return 'Voted: Challenger won';
+  if(v === -1) return 'Voted: Opponent won';
+  return `Voted: ${v}`;
+}
+
+function whoAmI(ch, me){
+  if(!me) return 'viewer';
+  const m = me.toLowerCase();
+  if(ch.challenger?.toLowerCase() === m) return 'challenger';
+  if(ch.participant?.toLowerCase() === m) return 'participant';
+  return 'viewer';
+}
+
+// Works even if your contract "state" meanings change,
+// because we also infer from addresses + deadlines + votes.
+function inferOutcome(ch){
+  const t = nowSec();
+  const joined = ch.participant && ch.participant !== ethers.ZeroAddress;
+  const joinExpired = ch.joinDeadline > 0 && t > ch.joinDeadline;
+  const resolveExpired = ch.resolveDeadline > 0 && t > ch.resolveDeadline;
+
+  const hasBothVotes = ch.challengerVote !== 0 && ch.participantVote !== 0;
+  const votesAgree = hasBothVotes && (ch.challengerVote === ch.participantVote);
+  const votesConflict = hasBothVotes && !votesAgree;
+
+  // "finished" heuristic:
+  // - your earlier code treated state > 1 as "finished" :contentReference[oaicite:3]{index=3}
+  const finished = (ch.state > 1) && votesAgree;
+
+  // "refunded" heuristic:
+  // If contract marks refunded as finished without votes, you may want to tighten this later.
+  const likelyRefunded = (ch.state > 1) && !joined; // optional heuristic
+
+  return { t, joined, joinExpired, resolveExpired, hasBothVotes, votesAgree, votesConflict, finished, likelyRefunded };
+}
+
+async function refreshBetStatus(targetId = 'actionStatus'){
+  const raw = String(($('betId')?.value || '')).trim();
+  if(!/^\d+$/.test(raw)){
+    setStatus(targetId, 'Paste a Challenge ID to see status.');
+    return;
+  }
+  if(!signer){
+    setStatus(targetId, 'Connect your wallet to check live on-chain status.');
+    return;
+  }
+
+  try{
+    const betId = BigInt(raw);
+    const ch = await readChallenge(betId);
+
+    if(!ch.challenger || ch.challenger === ethers.ZeroAddress){
+      setStatus(targetId, '❌ Challenge not found. Double-check the ID.');
+      return;
+    }
+
+    const stakeEth = Number(ethers.formatEther(ch.stakeWei || 0n));
+    const potEth = stakeEth * 2;
+    const joinBy = fmtTimeFromSec(ch.joinDeadline);
+    const resolveBy = fmtTimeFromSec(ch.resolveDeadline);
+
+    const inf = inferOutcome(ch);
+
+    // Most helpful “what should I do now?” messages:
+    if(!inf.joined){
+      if(inf.joinExpired){
+        setStatus(targetId,
+          `⏳ Not joined. Join window closed (${joinBy}).\n` +
+          `If you funded this challenge, use “Request Refund” to get your stake back.`
+        );
+      }else{
+        setStatus(targetId,
+          `🟢 Open & joinable.\n` +
+          `Stake: ${stakeEth.toFixed(6)} ETH (pot ≈ ${potEth.toFixed(6)} ETH).\n` +
+          `Join by: ${joinBy}.\n` +
+          `Creator: ${shortAddr(ch.challenger)}`
+        );
+      }
+      return;
+    }
+
+    // Joined
+    if(inf.finished){
+      setStatus(targetId,
+        `🏁 Completed.\n✅ Paid out on-chain (votes matched).\n` +
+        `Resolve deadline was: ${resolveBy}.`
+      );
+      return;
+    }
+
+    if(inf.votesConflict){
+      setStatus(targetId,
+        `⚠️ Votes conflict.\n` +
+        `Creator: ${voteLabel(ch.challengerVote)}\n` +
+        `Opponent: ${voteLabel(ch.participantVote)}\n\n` +
+        `For payout, both votes must match. If this is wrong, both players should re-check and submit the same result.`
+      );
+      return;
+    }
+
+    if(inf.resolveExpired){
+      setStatus(targetId,
+        `⏳ Resolve deadline passed (${resolveBy}).\n` +
+        `Refund should be available now. Use “Request Refund”.\n` +
+        `Creator: ${voteLabel(ch.challengerVote)} • Opponent: ${voteLabel(ch.participantVote)}`
+      );
+      return;
+    }
+
+    // Still active
+    setStatus(targetId,
+      `🟣 Joined & active.\n` +
+      `Resolve by: ${resolveBy}.\n` +
+      `Creator: ${voteLabel(ch.challengerVote)} • Opponent: ${voteLabel(ch.participantVote)}\n` +
+      `Next: both players vote, then “Finalize & Payout”.`
+    );
+
+  }catch(e){
+    console.error('refreshBetStatus failed', e);
+    setStatus(targetId, '❌ Could not load challenge status. Make sure you are on the correct network and try again.');
+  }
+}
+
+async function runTxWithUX({ title, targetId, sendTx }){
+  // Title shown to user, plus clean lifecycle messages
+  openTxModal(`${title}\n\n1) Waiting for signature…`, false);
+
+  try{
+    const tx = await sendTx(); // should return populated tx response
+    if(!tx?.hash){
+      updateTxModal(`${title}\n\n✅ Submitted. Waiting for confirmation…`, false);
+    }else{
+      updateTxModal(
+        `${title}\n\n✅ Submitted.\nTx: ${tx.hash}\n\n2) Waiting for confirmation…`,
+        true
+      );
+      const linkEl = $('lastTx');
+      if(linkEl){
+        linkEl.href = txLink(tx.hash);
+        linkEl.textContent = 'View on Basescan';
+      }
+    }
+
+    const receipt = await tx.wait();
+    updateTxModal(`${title}\n\n✅ Confirmed on-chain.\n\nRefreshing status…`, true);
+
+    // refresh UI
+    await refreshBetStatus(targetId);
+    maybeShowOutcomePopup(true).catch(()=>{});
+    return receipt;
+
+  }catch(e){
+    console.error('runTxWithUX failed', e);
+
+    const msg = (() => {
+      const m = (e?.shortMessage || e?.info?.error?.message || e?.message || String(e)).toLowerCase();
+      if(m.includes('user rejected') || m.includes('rejected')){
+        return 'You rejected the transaction in your wallet.';
+      }
+      if(m.includes('insufficient funds')){
+        return 'Insufficient funds for stake + gas.';
+      }
+      if(m.includes('wrong network') || m.includes('chain') || m.includes('switch')){
+        return 'Wrong network. Switch your wallet to match the selected Base network and try again.';
+      }
+      return (e?.shortMessage || e?.info?.error?.message || e?.message || String(e));
+    })();
+
+    showError(`❌ ${title} failed.\n\n${msg}`, targetId);
+    throw e;
+  }
+}
+
+  
 /* ---------- Error modal helpers ---------- */
 function openErrorModal(message){
   const modal = $('errorModal');
@@ -2090,6 +2316,12 @@ async function doPayout(){
 /* ---------- Wire UI ---------- */
 window.addEventListener('DOMContentLoaded',()=>{
   applyNetworkUI();
+    // Auto-refresh challenge status when a bet ID is entered
+  if ($('betId')) {
+    $('betId').addEventListener('input', () => {
+      refreshBetStatus('actionStatus').catch(()=>{});
+    });
+  }
     // NEW: Check if this challenge is already completed (safe no-op until wallet is connected)
   maybeShowOutcomePopup().catch(()=>{});
   const btnSwitch = $('btnSwitch'); if(btnSwitch) btnSwitch.onclick = toggleNetwork;
