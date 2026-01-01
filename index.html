@@ -1338,11 +1338,12 @@ async function maybeShowOutcomePopup(force = false){
     const creatorVote  = Number(b[8]);
     const opponentVote = Number(b[9]);
 
-    // Show only when challenge is finished AND votes agree (payout outcome)
-    if(state > 1 && creatorVote !== 0 && opponentVote !== 0 && creatorVote === opponentVote){
+        // Show when challenge is finished (payout completed on-chain)
+    if(state > 1){
       openTxModal('🏁 Challenge complete!\n\n✅ Winner has been paid out on-chain.', true);
       localStorage.setItem(key, '1');
     }
+
   }catch(e){
     // silently ignore
   }
