@@ -1923,10 +1923,10 @@ async function doVote(iWon){
   }catch(e){
     console.error('submitOutcomeVote error', e);
     showError(e, 'actionStatus');
-  }finally{
+  } finally {
     closeTxModal();
     [btnIWon, btnILost, btnPayout].forEach(b => { if (b) b.disabled = false; });
-  }
+}
 }
 
 async function doRefund(){
