@@ -1096,6 +1096,25 @@
     </div>
   </div>
 </div>
+  <div id="txModal" class="error-modal">
+  <div class="error-modal-backdrop"></div>
+  <div class="error-modal-card">
+    <div class="error-modal-header">
+      <span>Transaction</span>
+      <button type="button" class="error-modal-close" onclick="closeTxModal()">✕</button>
+    </div>
+    <div id="txModalMessage" class="error-modal-body"></div>
+    <button
+      id="txModalBtn"
+      type="button"
+      class="btn accent"
+      style="width:100%;margin-top:12px;display:none"
+      onclick="closeTxModal()"
+    >
+      Got it
+    </button>
+  </div>
+</div>
 
 <script>
 /* ---------- Config ---------- */
@@ -1233,7 +1252,30 @@ function openErrorModal(message){
   msgEl.textContent = message;
   modal.classList.add('visible');
 }
+/* ---------- Transaction modal helpers ---------- */
+function openTxModal(message, showButton = false){
+  const modal = $('txModal');
+  const msgEl = $('txModalMessage');
+  const btn   = $('txModalBtn');
+  if (!modal || !msgEl) return;
 
+  msgEl.textContent = message || '';
+  modal.classList.add('visible');
+
+  if (btn){
+    btn.style.display = showButton ? 'block' : 'none';
+  }
+}
+
+function updateTxModal(message){
+  const msgEl = $('txModalMessage');
+  if (msgEl) msgEl.textContent = message || '';
+}
+
+function closeTxModal(){
+  const modal = $('txModal');
+  if (modal) modal.classList.remove('visible');
+}
 function closeErrorModal(){
   const modal = $('errorModal');
   if (modal) modal.classList.remove('visible');
@@ -1736,6 +1778,7 @@ async function doCreate(){
     // Precision fix: Ensure we parse the high-precision string
     const stakeWei = ethers.parseEther(stakeEthNum.toFixed(6));
     $('createStatus').textContent = 'Sending transaction…';
+    openTxModal('⏳ Confirm the transaction in your wallet');
 
     const tx = await c.openChallenge(
       stakeWei,
@@ -1746,9 +1789,11 @@ async function doCreate(){
     );
 
     $('createStatus').textContent = '⏳ Transaction sent, waiting for confirmation…';
+    updateTxModal('⛓️ Transaction submitted.\nWaiting for on-chain confirmation…');
     const receipt = await tx.wait();
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('createStatus').textContent = '✅ Challenge created!';
+    updateTxModal('✅ Challenge created successfully!', true);
 
     try{
       const nextId = await c.nextChallengeId();
@@ -1768,6 +1813,7 @@ async function doCreate(){
   }finally{
     if (btn) btn.disabled = false;
   }
+  closeTxModal();
 }
 
 async function doJoin(){
@@ -1809,17 +1855,20 @@ async function doJoin(){
     }
 
     $('actionStatus').textContent = 'Sending transaction…';
+    openTxModal('⏳ Confirm join in your wallet');
 
     const tx = await c.joinChallenge(betId, { value: stakeWei });
     const receipt = await tx.wait();
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('actionStatus').textContent = '✅ Joined challenge';
+    updateTxModal('✅ You have joined the challenge!', true);
   }catch(e){
     console.error('joinChallenge error', e);
     showError(e, 'actionStatus');
   }finally{
     if (btn) btn.disabled = false;
   }
+  closeTxModal();
 }
 
 async function doVote(iWon){
