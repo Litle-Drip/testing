@@ -1267,9 +1267,12 @@ function openTxModal(message, showButton = false){
   }
 }
 
-function updateTxModal(message){
+function updateTxModal(message, showButton = false){
   const msgEl = $('txModalMessage');
+  const btn   = $('txModalBtn');
+
   if (msgEl) msgEl.textContent = message || '';
+  if (btn) btn.style.display = showButton ? 'block' : 'none';
 }
 
 function closeTxModal(){
@@ -1316,7 +1319,34 @@ function showError(message, targetId){
   }
   openErrorModal(msg);
 }
+async function maybeShowOutcomePopup(force = false){
+  try{
+    const raw = String(($('betId')?.value || '')).trim();
+    if(!/^\d+$/.test(raw)) return;
 
+    const betId = BigInt(raw);
+    const key = `juice_outcome_seen_${CURRENT_NETWORK}_${betId}`;
+
+    if(!force && localStorage.getItem(key) === '1') return;
+    if(!signer) return;
+
+    const c = getContract();
+    const b = await c.getChallenge(betId);
+    if (b[0] === ethers.ZeroAddress) return;
+
+    const state = Number(b[7]);
+    const creatorVote  = Number(b[8]);
+    const opponentVote = Number(b[9]);
+
+    // Show only when challenge is finished AND votes agree (payout outcome)
+    if(state > 1 && creatorVote !== 0 && opponentVote !== 0 && creatorVote === opponentVote){
+      openTxModal('🏁 Challenge complete!\n\n✅ Winner has been paid out on-chain.', true);
+      localStorage.setItem(key, '1');
+    }
+  }catch(e){
+    // silently ignore
+  }
+}
 /* ---------- QR + share helpers ---------- */
 function currentShareUrl(){
   const betIdRaw = String(($('betId')?.value || '')).trim();
@@ -1717,6 +1747,7 @@ async function connectWithWalletConnect(){
 
     updateWalletNetworkLabel();
     applyNetworkUI();
+    maybeShowOutcomePopup().catch(()=>{});
 
   }catch(e){
     console.error('WalletConnect failed',e);
@@ -1915,18 +1946,24 @@ async function doVote(iWon){
     }
 
     $('actionStatus').textContent = 'Sending transaction…';
+    openTxModal('⏳ Confirm your vote in your wallet');
+
     const tx = await c.submitOutcomeVote(betId, creatorWon);
+
+    updateTxModal('⛓️ Vote submitted.\nWaiting for on-chain confirmation…');
     const receipt = await tx.wait();
+
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('actionStatus').textContent = '✅ Vote recorded';
-    updateTxModal('✅ Vote submitted successfully!', true);
+    updateTxModal('✅ Vote recorded successfully!', true);
+
   }catch(e){
     console.error('submitOutcomeVote error', e);
-    showError(e, 'actionStatus');
-  } finally {
     closeTxModal();
+    showError(e, 'actionStatus');
+  }finally{
     [btnIWon, btnILost, btnPayout].forEach(b => { if (b) b.disabled = false; });
-}
+  }
 }
 
 async function doRefund(){
@@ -1952,7 +1989,6 @@ async function doRefund(){
       return;
     }
 
-    const creator        = b[0];
     const opponent       = b[1];
     const joinDeadline   = Number(b[4]);
     const resolveDeadline= Number(b[5]);
@@ -1974,17 +2010,21 @@ async function doRefund(){
 
     $('actionStatus').textContent = 'Sending transaction…';
     openTxModal('⏳ Confirm refund in your wallet');
+
     const tx = await c.issueRefund(betId);
+
+    updateTxModal('⛓️ Refund submitted.\nWaiting for on-chain confirmation…');
     const receipt = await tx.wait();
 
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('actionStatus').textContent = '✅ Refund sent';
     updateTxModal('✅ Refund completed successfully!', true);
+
   }catch(e){
     console.error('refund error', e);
+    closeTxModal();
     showError(e, 'actionStatus');
   }finally{
-    closeTxModal();
     if (btn) btn.disabled = false;
   }
 }
@@ -2019,17 +2059,25 @@ async function doPayout(){
     }
 
     $('actionStatus').textContent = 'Sending transaction…';
+    openTxModal('⏳ Confirm payout in your wallet');
 
     const tx = await c.resolveChallenge(betId);
+
+    updateTxModal('⛓️ Payout submitted.\nWaiting for on-chain confirmation…');
     const receipt = await tx.wait();
+
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('actionStatus').textContent = '✅ Payout sent';
     updateTxModal('✅ Payout finalized and sent!', true);
+
+    // Also show the “challenge complete / winner paid” popup logic (and mark seen)
+    await maybeShowOutcomePopup(true);
+
   }catch(e){
     console.error('resolve error', e);
+    closeTxModal();
     showError(e, 'actionStatus');
   }finally{
-    closeTxModal();
     if (btn) btn.disabled = false;
   }
 }
