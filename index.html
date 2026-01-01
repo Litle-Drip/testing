@@ -1649,9 +1649,13 @@ async function connect(){
       const chipBtm = $('chipFeeBottom');
       if(chipMain) chipMain.textContent = `Fee ${feePct}%`;
       if(chipBtm) chipBtm.textContent = `Fee ${feePct}%`;
-    } catch(e) {
+        } catch(e) {
       console.warn('Could not fetch dynamic fee', e);
     }
+
+    // NEW: If a bet is already finished, show the “winner paid out” popup (safe no-op if no betId)
+    maybeShowOutcomePopup().catch(()=>{});
+
 
   }catch(e){
     console.error('connect() failed',e);
@@ -2085,6 +2089,8 @@ async function doPayout(){
 /* ---------- Wire UI ---------- */
 window.addEventListener('DOMContentLoaded',()=>{
   applyNetworkUI();
+    // NEW: Check if this challenge is already completed (safe no-op until wallet is connected)
+  maybeShowOutcomePopup().catch(()=>{});
   const btnSwitch = $('btnSwitch'); if(btnSwitch) btnSwitch.onclick = toggleNetwork;
   const btnWC = $('btnWalletConnect'); if(btnWC) btnWC.onclick = connectWithWalletConnect;
 
