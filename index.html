@@ -1578,7 +1578,7 @@ async function maybeShowOutcomePopup(force = false){
     const noOpponent = (opponent === ethers.ZeroAddress);
 
     // Votes agree if both non-zero and equal (covers your current pattern)
-    const votesAgree = (creatorVote !== 0 && opponentVote !== 0 && creatorVote === opponentVote);
+    const votesAgree = (creatorVote === opponentVote) && !(creatorVote === 0 && opponentVote === 0 && now > resolveDeadline);
 
     // Determine winner if payout happened
     // Supports common encodings:
