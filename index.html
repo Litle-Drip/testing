@@ -1854,8 +1854,9 @@ async function doJoin(){
       return;
     }
 
-    $('actionStatus').textContent = 'Sending transaction…';
-    openTxModal('⏳ Confirm join in your wallet');
+   $('actionStatus').textContent = 'Sending transaction…';
+   openTxModal('⏳ Confirm your vote in your wallet');
+
 
     const tx = await c.joinChallenge(betId, { value: stakeWei });
     const receipt = await tx.wait();
@@ -1918,10 +1919,12 @@ async function doVote(iWon){
     const receipt = await tx.wait();
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('actionStatus').textContent = '✅ Vote recorded';
+    updateTxModal('✅ Vote submitted successfully!', true);
   }catch(e){
     console.error('submitOutcomeVote error', e);
     showError(e, 'actionStatus');
   }finally{
+    closeTxModal();
     [btnIWon, btnILost, btnPayout].forEach(b => { if (b) b.disabled = false; });
   }
 }
@@ -1970,15 +1973,18 @@ async function doRefund(){
     }
 
     $('actionStatus').textContent = 'Sending transaction…';
+    openTxModal('⏳ Confirm refund in your wallet');
     const tx = await c.issueRefund(betId);
     const receipt = await tx.wait();
 
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('actionStatus').textContent = '✅ Refund sent';
+    updateTxModal('✅ Refund completed successfully!', true);
   }catch(e){
     console.error('refund error', e);
     showError(e, 'actionStatus');
   }finally{
+    closeTxModal();
     if (btn) btn.disabled = false;
   }
 }
@@ -2018,10 +2024,12 @@ async function doPayout(){
     const receipt = await tx.wait();
     $('lastTx').href = `${currentBase().explorer}/tx/${receipt.hash}`;
     $('actionStatus').textContent = '✅ Payout sent';
+    updateTxModal('✅ Payout finalized and sent!', true);
   }catch(e){
     console.error('resolve error', e);
     showError(e, 'actionStatus');
   }finally{
+    closeTxModal();
     if (btn) btn.disabled = false;
   }
 }
