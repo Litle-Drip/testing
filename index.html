@@ -1560,20 +1560,87 @@ async function maybeShowOutcomePopup(force = false){
     const b = await c.getChallenge(betId);
     if (b[0] === ethers.ZeroAddress) return;
 
-    const state = Number(b[7]);
-    const creatorVote  = Number(b[8]);
-    const opponentVote = Number(b[9]);
+    const creator = b[0];
+    const opponent = b[1];
 
-        // Show when challenge is finished (payout completed on-chain)
-    if(state > 1){
-      openTxModal('🏁 Challenge complete!\n\n✅ Winner has been paid out on-chain.', true);
-      localStorage.setItem(key, '1');
+    const joinDeadline    = Number(b[4]);
+    const resolveDeadline = Number(b[5]);
+    const state           = Number(b[7]);
+    const creatorVote     = Number(b[8]);
+    const opponentVote    = Number(b[9]);
+
+    // Only show once the challenge is actually closed on-chain
+    if (state <= 1) return;
+
+    const now = Math.floor(Date.now()/1000);
+    const short = (a)=> a ? (a.slice(0,6) + '…' + a.slice(-4)) : '';
+
+    const noOpponent = (opponent === ethers.ZeroAddress);
+
+    // Votes agree if both non-zero and equal (covers your current pattern)
+    const votesAgree = (creatorVote !== 0 && opponentVote !== 0 && creatorVote === opponentVote);
+
+    // Determine winner if payout happened
+    // Supports common encodings:
+    // - creatorWon stored as 1 / -1
+    // - OR creatorWon stored as 1 / 0
+    // - OR creatorWon stored as 1 / 2
+    const creatorWon =
+      (creatorVote === 1) ? true :
+      (creatorVote === -1) ? false :
+      (creatorVote === 0) ? false :
+      (creatorVote === 2) ? false :
+      null;
+
+    // If no opponent ever joined, this can only be a solo-refund close
+    if (noOpponent){
+      if (now > joinDeadline){
+        openTxModal(
+          `🏁 Challenge closed\n\n↩️ Refunded on-chain (no one joined before the join deadline).`,
+          true
+        );
+        localStorage.setItem(key, '1');
+      }
+      return;
     }
+
+    // If votes matched, payout was executed
+    if (votesAgree && creatorWon !== null){
+      const winnerAddr = creatorWon ? creator : opponent;
+
+      // Optional: personalized line if YOU are the winner
+      let youLine = '';
+      try{
+        const me = (await signer.getAddress()).toLowerCase();
+        if (winnerAddr.toLowerCase() === me) youLine = `\n\n✅ You won — payout sent on-chain.`;
+      }catch(e){}
+
+      openTxModal(
+        `🏁 Challenge complete!\n\n✅ Winner has been paid out on-chain.\nWinner: ${short(winnerAddr)}${youLine}`,
+        true
+      );
+      localStorage.setItem(key, '1');
+      return;
+    }
+
+    // Otherwise: closed via refund path (vote mismatch + deadline, etc.)
+    let reason = 'Refunded on-chain.';
+    const votesMismatch = (creatorVote !== 0 && opponentVote !== 0 && creatorVote !== opponentVote);
+
+    if (votesMismatch && now > resolveDeadline){
+      reason = 'Refunded on-chain (votes did not match before the resolve deadline).';
+    } else if (now > resolveDeadline){
+      reason = 'Refunded on-chain (resolve deadline passed).';
+    }
+
+    openTxModal(`🏁 Challenge closed\n\n↩️ ${reason}`, true);
+    localStorage.setItem(key, '1');
 
   }catch(e){
     // silently ignore
   }
 }
+
 /* ---------- QR + share helpers ---------- */
 function currentShareUrl(){
   const betIdRaw = String(($('betId')?.value || '')).trim();
@@ -2251,6 +2318,10 @@ async function doRefund(){
     $('actionStatus').textContent = '✅ Refund sent';
     updateTxModal('✅ Refund completed successfully!', true);
 
+    // Force the “challenge closed / refunded” popup (and mark it seen)
+    await maybeShowOutcomePopup(true);
+
+
   }catch(e){
     console.error('refund error', e);
     closeTxModal();
@@ -2316,14 +2387,28 @@ async function doPayout(){
 /* ---------- Wire UI ---------- */
 window.addEventListener('DOMContentLoaded',()=>{
   applyNetworkUI();
-    // Auto-refresh challenge status when a bet ID is entered
-  if ($('betId')) {
-    $('betId').addEventListener('input', () => {
-      refreshBetStatus('actionStatus').catch(()=>{});
-    });
-  }
-    // NEW: Check if this challenge is already completed (safe no-op until wallet is connected)
+    // Auto-refresh + check completion/refund when a bet ID is entered/changed
+const betEl = $('betId');
+if (betEl) {
+  betEl.addEventListener('input', () => {
+    refreshBetStatus('actionStatus').catch(()=>{});
+    maybeShowOutcomePopup().catch(()=>{});
+  });
+}
+
+// Check once on load (safe no-op until wallet is connected)
+maybeShowOutcomePopup().catch(()=>{});
+
+// Poll so BOTH sides see the “paid/refunded” popup when the other side finalizes
+setInterval(() => {
+  const raw = String(($('betId')?.value || '')).trim();
+  if (!signer) return;
+  if (!/^\d+$/.test(raw)) return;
+
+  refreshBetStatus('actionStatus').catch(()=>{});
   maybeShowOutcomePopup().catch(()=>{});
+}, 12000);
+
   const btnSwitch = $('btnSwitch'); if(btnSwitch) btnSwitch.onclick = toggleNetwork;
   const btnWC = $('btnWalletConnect'); if(btnWC) btnWC.onclick = connectWithWalletConnect;
 
