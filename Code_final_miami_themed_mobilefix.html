@@ -723,9 +723,11 @@
       border-radius: 40px !important;
     }
     .deadline-highlight:focus{
-      background:#ffffff !important;
-      color:#000000 !important;
-      border-color:var(--accent) !important;
+      background: rgba(232,214,201,0.18) !important;
+      color: var(--text) !important;
+      border-color: rgba(109,214,209,0.95) !important;
+      outline: none !important;
+      box-shadow: 0 0 0 4px rgba(109,214,209,0.22) !important;
     }
     
     /* Error Modal */
@@ -1076,7 +1078,15 @@
     }
     .deadline-input{
       border-radius:16px;
+      color: var(--text) !important;
+      caret-color: var(--accent) !important;
     }
+    .deadline-input::-webkit-inner-spin-button,
+    .deadline-input::-webkit-outer-spin-button{
+      opacity: 0.6;
+      filter: invert(1);
+    }
+
     .deadline-highlight{
       box-shadow:0 0 0 4px rgba(0,234,255,0.14);
     }
@@ -1448,6 +1458,15 @@ header::after{
   z-index:-1;
   opacity:0.55;
   pointer-events:none;
+}
+html, body{
+  min-height: 100%;
+  background-color: var(--bg);
+}
+
+body{
+  min-height: 100vh;
+  background-attachment: fixed;
 }
 
 </style>
