@@ -33,6 +33,12 @@
       background:radial-gradient(circle at top,#111827 0,#020617 45%,#000 100%);
       color:var(--text);
       font:500 var(--fs)/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background-attachment: fixed;
+   html, body{
+      min-height: 100%;
+      background-color: #07050a; /* matches your theme base */
+    }
+
     }
 
     .app{
@@ -244,7 +250,7 @@
     }
     .tab.active{
       background:#f9fafb;
-      color:#020617;
+      color:#1a1118;
       font-weight:600;
       border:1px solid var(--accent);
     }
@@ -710,10 +716,11 @@
     .site-footer a:hover{text-decoration:underline}
 
     .deadline-highlight{
-      background:#ffffff !important;  
-      color:#000000 !important;
-      border:2px solid var(--accent) !important;
-      border-radius:40px !important;
+      /* Miami highlight, but KEEP readable in dark UI */
+      background: rgba(232,214,201,0.14) !important;
+      color: var(--text) !important;
+      border: 2px solid rgba(109,214,209,0.78) !important;
+      border-radius: 40px !important;
     }
     .deadline-highlight:focus{
       background:#ffffff !important;
