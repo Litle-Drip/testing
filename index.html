@@ -33,12 +33,18 @@
       background:radial-gradient(circle at top,#111827 0,#020617 45%,#000 100%);
       color:var(--text);
       font:500 var(--fs)/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background-attachment: fixed;
+   html, body{
+      min-height: 100%;
+      background-color: #07050a; /* matches your theme base */
+    }
+
     }
 
     .app{
       max-width:960px;
       margin:0 auto;
-      padding:20px 20px 24px;
+      padding:20px 20px calc(24px + env(safe-area-inset-bottom));
     }
 
     /* Header */
@@ -117,8 +123,9 @@
       font-weight:600;
     }
     .btn.accent:hover{
-      background:#16a34a;
-      border-color:#16a34a;
+      background:rgba(0,234,255,0.86);
+      border-color:rgba(0,234,255,0.86);
+      box-shadow:var(--glow);
     }
     .btn.ghost{
       border-color:var(--border);
@@ -243,7 +250,7 @@
     }
     .tab.active{
       background:#f9fafb;
-      color:#020617;
+      color:#1a1118;
       font-weight:600;
       border:1px solid var(--accent);
     }
@@ -398,6 +405,7 @@
       justify-content:center;
       gap:8px;
       width:200px;
+      max-width:100%;
       padding:10px 12px;
       border:1px solid #2a2a2f;
       border-radius:18px;
@@ -412,14 +420,13 @@
     .stake-box .stake-amount{
       width:90px;
       max-width:90px;
-      font-size:26px;
+      font-size:16px;
       text-align:center;
       border:none;
       background:transparent;
       color:#f9fafb;
-      line-height:1.1;
+      line-height:1.2;
     }
-
     .stake-toggle{
       display:flex;
       flex-direction:column;
@@ -708,15 +715,18 @@
     .site-footer a:hover{text-decoration:underline}
 
     .deadline-highlight{
-      background:#ffffff !important;  
-      color:#000000 !important;
-      border:2px solid var(--accent) !important;
-      border-radius:40px !important;
+      /* Miami highlight, but KEEP readable in dark UI */
+      background: rgba(232,214,201,0.14) !important;
+      color: var(--text) !important;
+      border: 2px solid rgba(109,214,209,0.78) !important;
+      border-radius: 40px !important;
     }
     .deadline-highlight:focus{
-      background:#ffffff !important;
-      color:#000000 !important;
-      border-color:var(--accent) !important;
+      background: rgba(232,214,201,0.18) !important;
+      color: var(--text) !important;
+      border-color: rgba(109,214,209,0.95) !important;
+      outline: none !important;
+      box-shadow: 0 0 0 4px rgba(109,214,209,0.22) !important;
     }
     
     /* Error Modal */
@@ -781,7 +791,21 @@
         padding:0 8px;
         width:100%;
       }
-      .top-actions{
+      #chipNetwork{
+  align-self:flex-start;
+  margin-top:2px;
+}
+.tabs{
+  margin:14px auto 18px;
+}
+.qr-row{
+  flex-direction:column;
+  align-items:stretch;
+}
+.qr-box{
+  margin:0 auto;
+}
+.top-actions{
         display:flex;
         flex-direction:row;
         flex-wrap:wrap;
@@ -795,6 +819,7 @@
         font-size:11px;
         white-space:nowrap;
         flex-shrink:1;
+      min-height:32px;
       }
       .addr{
         font-size:10px;
@@ -813,11 +838,17 @@
       .subchips{
         display:flex;
         flex-direction:row;
-        flex-wrap:nowrap;
+        flex-wrap:wrap;
         align-items:center;
         justify-content:center;
         gap:6px;
       }
+      .subchips{
+        overflow-x:auto;
+        -webkit-overflow-scrolling:touch;
+        scrollbar-width:none;
+      }
+      .subchips::-webkit-scrollbar{display:none}
       .subchips .chip{
         width:auto;
         margin-bottom:0;
@@ -827,7 +858,12 @@
         justify-content:center;
       }
       .quick-row{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .stake-amount{font-size:28px;min-width:80px}
+      .quick-chip,.quick-amt{min-height:44px}
+      .stake-amount{
+        font-size:16px;
+        min-width:80px;
+      }
+
       .stake-main{
         flex-wrap:wrap;
         justify-content:center;
@@ -867,7 +903,607 @@
       }
       .site-footer a{margin:0}
     }
-  </style>
+  
+    /* =========================================================
+       Apple-like polish overrides (visual only; no logic changes)
+       ========================================================= */
+    :root{
+      --radius:20px;
+      --card: rgba(18,18,20,0.92);
+      --card-soft: rgba(24,24,28,0.86);
+      --border: rgba(255,255,255,0.10);
+      --chip: rgba(255,255,255,0.06);
+      --muted:#9ca3af;
+      --text:#f8fafc;
+
+      /* Miami (80s/90s) accents — kept subtle/premium */
+      --miami-cyan: rgba(0,234,255,1);
+      --miami-pink: rgba(255,0,170,1);
+      --miami-sunset: rgba(255,170,0,1);
+      --glow-cyan: rgba(0,234,255,0.22);
+      --glow-pink: rgba(255,0,170,0.18);
+    }
+    body{
+      background:
+        radial-gradient(900px 520px at 82% -180px, rgba(255,0,170,0.18), transparent 60%),
+        radial-gradient(980px 560px at 12% 0%, rgba(0,234,255,0.14), transparent 55%),
+        radial-gradient(760px 420px at 50% 112%, rgba(255,170,0,0.10), transparent 62%),
+        linear-gradient(180deg, #060611 0%, #000 62%, #050015 100%);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      letter-spacing:-0.01em;
+    }
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 84px 84px;
+      opacity:0.20;
+      mask-image: radial-gradient(circle at 50% 0%, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 72%);
+    }
+
+    .app{max-width:920px}
+    .topbar{max-width:560px}
+    .subbar, .network-warning-bar, .tabs, .card, .share-card, .summary-card, .site-footer{max-width:560px}
+
+    .card{
+      border-radius:24px;
+      border:1px solid var(--border);
+      background:var(--card);
+      box-shadow:0 14px 50px rgba(0,0,0,.60);
+      backdrop-filter:saturate(130%) blur(10px);
+      -webkit-backdrop-filter:saturate(130%) blur(10px);
+    }
+    .share-card, .summary-card, .site-footer{
+      border:1px solid var(--border);
+      background:var(--card-soft);
+      box-shadow:0 12px 40px rgba(0,0,0,.45);
+      backdrop-filter:saturate(130%) blur(10px);
+      -webkit-backdrop-filter:saturate(130%) blur(10px);
+    }
+
+    .btn{
+      min-height:44px;
+      padding:0 16px;
+      font-weight:600;
+      letter-spacing:-0.01em;
+    }
+    .btn.small{min-height:34px;padding:0 12px;font-size:12px}
+    .btn:active{transform:translateY(0)}
+    .btn:focus-visible{
+      outline:none;
+      box-shadow:0 0 0 4px rgba(0,234,255,0.22);
+      border-color:rgba(0,234,255,0.75);
+    }
+    .btn.ghost{
+      background:rgba(255,255,255,0.04);
+    }
+    .btn.ghost:hover{
+      background:rgba(255,255,255,0.07);
+    }
+    .btn.primary{
+      min-height:48px;
+      border-radius:14px;
+    }
+    .btn.accent{
+      min-height:48px;
+      border-radius:14px;
+      box-shadow:0 10px 28px rgba(0,234,255,0.18);
+    }
+    #btnReset{
+      min-height:48px;
+      border-radius:14px;
+    }
+
+    .input{
+      min-height:44px;
+      padding:0 14px;
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(255,255,255,0.04);
+    }
+    .input:focus{
+      outline:none;
+      border-color:rgba(0,234,255,0.70);
+      box-shadow:0 0 0 4px rgba(0,234,255,0.18);
+    }
+
+    .tabs{
+      background:rgba(255,255,255,0.04);
+      border:1px solid rgba(0,234,255,0.55);
+      padding:5px;
+    }
+    .tab{padding:10px 0}
+    .tab.active{
+      border-radius:999px;
+      border:0;
+      box-shadow:0 12px 30px rgba(0,0,0,0.35);
+    }
+
+    .chip{
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(255,255,255,0.05);
+      padding:6px 10px;
+      font-size:11px;
+      opacity:0.95;
+    }
+    .chip.badge{
+      background:rgba(0,234,255,0.12);
+      border-color:rgba(0,234,255,0.65);
+      box-shadow:0 0 14px rgba(0,234,255,0.28);
+    }
+
+    .addr{
+      border:1px solid rgba(0,234,255,0.60);
+      background:rgba(0,0,0,0.35);
+      box-shadow:0 0 0 1px rgba(0,234,255,0.12), 0 10px 28px rgba(0,0,0,0.40);
+      padding:10px 18px;
+    }
+
+    .stake-area{margin-top:16px;margin-bottom:18px}
+    .stake-box{
+      background:rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.10);
+      box-shadow:0 10px 30px rgba(0,0,0,0.35);
+    }
+    .stake-box .stake-amount{letter-spacing:-0.02em}
+    .adjust-btn{
+      width:36px;height:36px;
+      border-radius:999px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:18px;
+    }
+    .stake-toggle button{
+      min-height:36px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(255,255,255,0.04);
+    }
+    .stake-toggle button.connected{
+      border-color:rgba(0,234,255,0.80);
+      box-shadow:0 0 0 3px rgba(0,234,255,0.16);
+    }
+
+    .quick-chip, .quick-amt{
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(255,255,255,0.04);
+      border-radius:16px;
+      min-height:44px;
+    }
+    .quick-chip:hover, .quick-amt:hover{
+      background:rgba(255,255,255,0.07);
+      border-color:rgba(255,255,255,0.14);
+    }
+    .deadline-input{
+      border-radius:16px;
+      color: var(--text) !important;
+      caret-color: var(--accent) !important;
+    }
+    .deadline-input::-webkit-inner-spin-button,
+    .deadline-input::-webkit-outer-spin-button{
+      opacity: 0.6;
+      filter: invert(1);
+    }
+
+    .deadline-highlight{
+      box-shadow:0 0 0 4px rgba(0,234,255,0.14);
+    }
+
+    .resolve-section{
+      border-top:1px solid rgba(255,255,255,0.10);
+    }
+
+    .error-modal-card{
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(18,18,20,0.94);
+      backdrop-filter:saturate(130%) blur(10px);
+      -webkit-backdrop-filter:saturate(130%) blur(10px);
+    }
+
+    @media(max-width:640px){
+      .top-actions .btn.small{min-height:32px}
+      .card{border-radius:22px}
+      .btn.primary,.btn.accent,#btnReset{min-height:50px}
+      .quick-row{gap:10px}
+      .stake-box{width:min(240px,100%)}
+    }
+
+  
+
+    /* ===== Miami polish tweaks ===== */
+    .stake-box{
+      width:auto !important;
+      flex: 1 1 340px;
+      max-width: 560px;
+    }
+    .stake-amount{
+      width:100%;
+      min-width:0;
+      font-variant-numeric: tabular-nums;
+    }
+    .stake-main{
+      gap:16px !important;
+    }
+
+    /* Make the +/- sit tight and consistent */
+    .stake-adjust{
+      gap:12px !important;
+    }
+    .adjust-btn{
+      border-color: rgba(0,234,255,0.65) !important;
+      box-shadow: 0 0 0 3px rgba(0,234,255,0.10), 0 12px 30px rgba(0,0,0,0.35);
+    }
+    .adjust-btn:hover{
+      box-shadow: 0 0 0 3px rgba(255,0,170,0.12), 0 0 26px rgba(0,234,255,0.22), 0 14px 34px rgba(0,0,0,0.40);
+    }
+
+    /* ETH / USD toggle — subtle neon rim */
+    .stake-toggle button.connected{
+      border-color: rgba(0,234,255,0.85) !important;
+      box-shadow:
+        0 0 0 3px rgba(0,234,255,0.14),
+        0 0 0 5px rgba(255,0,170,0.08),
+        0 0 22px rgba(0,234,255,0.16);
+    }
+
+    /* Chips feel more “South Beach” but still clean */
+    .quick-chip, .quick-amt, .chip{
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03)) !important;
+    }
+    .chip.connected{
+      border-color: rgba(0,234,255,0.78) !important;
+      box-shadow:
+        0 0 0 3px rgba(0,234,255,0.12),
+        0 0 18px rgba(255,0,170,0.10);
+    }
+
+    /* Links / highlights */
+    a, .link{
+      color: rgba(0,234,255,0.95);
+    }
+
+/* =========================================================
+   Miami Beach Postcard Theme (visual only)
+   - Inspired by the vintage Miami Beach palette (mauve sky, dusty rose, sun-faded sand)
+   - No logic changes
+   ========================================================= */
+:root{
+  /* Core surfaces */
+  --bg:#07050a;
+  --text:#fbf7f9;
+  --muted:#cbb9bf;
+  --border:rgba(255,245,250,0.14);
+  --chip:rgba(255,245,250,0.06);
+
+  /* Postcard tints (pulled from image: mauve/dusty-rose) */
+  --miami-mauve:#614f6a;
+  --miami-dusty-rose:#bd938f;
+  --miami-plum:#966f7d;
+  --miami-sand:#e8d6c9;
+
+  /* App cards */
+  --card:rgba(22,14,22,0.72);
+  --card-soft:rgba(18,12,18,0.62);
+
+  /* Accent: sun-faded aqua (instead of neon cyan) */
+  --accent:#6dd6d1;
+  --accent-ink:#062221;
+  --glow:0 0 18px rgba(109,214,209,0.35);
+
+  /* Secondary glow for subtle “sunset” moments */
+  --miami-coral:#e7a3b6;
+  --glow-coral:0 0 22px rgba(231,163,182,0.22);
+}
+
+/* Background: mauve sky → dusty rose → sand, with soft vignette */
+body{
+  background:
+    radial-gradient(1200px 520px at 50% -140px, rgba(97,79,106,0.55), transparent 60%),
+    radial-gradient(900px 520px at 18% 8%, rgba(189,147,143,0.30), transparent 58%),
+    radial-gradient(900px 620px at 82% 18%, rgba(231,163,182,0.16), transparent 60%),
+    radial-gradient(1100px 700px at 50% 120%, rgba(232,214,201,0.12), transparent 65%),
+    linear-gradient(180deg, #17111e 0%, #0b0710 48%, #07050a 100%);
+}
+
+/* Softer grid/grain */
+body::before{
+  opacity:0.14;
+  background-size: 96px 96px;
+}
+
+/* Cards: warm glass */
+.card, .share-card, .summary-card, .site-footer, .error-modal-card{
+  border-color: var(--border) !important;
+  background: var(--card) !important;
+  box-shadow: 0 16px 54px rgba(0,0,0,0.55) !important;
+}
+.share-card, .summary-card, .site-footer{
+  background: var(--card-soft) !important;
+}
+
+/* Inputs: warm glass + aqua focus */
+.input, .idea-input{
+  border-color: rgba(255,245,250,0.14) !important;
+  background: rgba(255,245,250,0.04) !important;
+}
+.input:focus, .idea-input:focus{
+  outline:none !important;
+  border-color: rgba(109,214,209,0.70) !important;
+  box-shadow: 0 0 0 4px rgba(109,214,209,0.16) !important;
+}
+
+/* Chips: sun-faded */
+.chip{
+  border-color: rgba(255,245,250,0.14) !important;
+  background: rgba(255,245,250,0.05) !important;
+  color: rgba(251,247,249,0.82) !important;
+}
+.chip.badge{
+  border-color: rgba(109,214,209,0.55) !important;
+  background: rgba(109,214,209,0.12) !important;
+  color: rgba(109,214,209,0.95) !important;
+  box-shadow: var(--glow) !important;
+}
+.chip.network-active{
+  border-color: rgba(109,214,209,0.70) !important;
+  box-shadow: var(--glow), var(--glow-coral) !important;
+}
+
+/* Buttons: keep your layout, just re-skin */
+.btn{
+  border-color: rgba(255,245,250,0.14) !important;
+  background: rgba(255,245,250,0.05) !important;
+}
+.btn:hover{
+  background: rgba(255,245,250,0.08) !important;
+}
+.btn.primary{
+  background: rgba(232,214,201,0.92) !important;
+  border-color: rgba(232,214,201,0.92) !important;
+  color: #1a1118 !important;
+}
+.btn.primary:hover{
+  background: rgba(232,214,201,0.84) !important;
+  border-color: rgba(232,214,201,0.84) !important;
+}
+.btn.accent{
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent-ink) !important;
+  box-shadow: 0 12px 30px rgba(109,214,209,0.22) !important;
+}
+.btn.accent:hover{
+  filter:saturate(1.05);
+  box-shadow: var(--glow), var(--glow-coral) !important;
+}
+
+/* Quick chips/amounts: warm glass */
+.quick-chip, .quick-amt, .stake-toggle button{
+  border-color: rgba(255,245,250,0.14) !important;
+  background: rgba(255,245,250,0.05) !important;
+}
+.quick-chip:hover, .quick-amt:hover, .stake-toggle button:hover{
+  background: rgba(255,245,250,0.08) !important;
+}
+
+/* Deadline highlight stays “paper” but with postcard rim */
+.deadline-highlight{
+  border-color: rgba(109,214,209,0.70) !important;
+  box-shadow: 0 0 0 4px rgba(109,214,209,0.12), 0 0 0 6px rgba(231,163,182,0.06) !important;
+}
+
+/* Address pill: subtle aqua rim */
+.addr{
+  border-color: rgba(109,214,209,0.55) !important;
+  box-shadow: 0 0 0 1px rgba(109,214,209,0.12), 0 12px 30px rgba(0,0,0,0.40) !important;
+}
+
+/* Stake accents */
+.adjust-btn{
+  border-color: rgba(109,214,209,0.60) !important;
+  color: rgba(109,214,209,0.95) !important;
+}
+.adjust-btn:hover{
+  background: rgba(109,214,209,0.95) !important;
+  color: var(--accent-ink) !important;
+  box-shadow: var(--glow), var(--glow-coral) !important;
+}
+.stake-toggle button.connected{
+  border-color: rgba(109,214,209,0.75) !important;
+  box-shadow: 0 0 0 3px rgba(109,214,209,0.14), 0 0 18px rgba(231,163,182,0.10) !important;
+}
+
+/* Make the “ETH / USD” preview numbers match the new accent */
+#sbPotEth,#sbPotUsd,#sbWinEth,#sbWinUsd{
+  color: rgba(109,214,209,0.98) !important;
+}
+
+/* Link color */
+a, .summary-link{
+  color: rgba(109,214,209,0.98) !important;
+}
+
+
+
+/* =========================================================
+   Mobile polish + extra 80s Miami energy
+   (layout unchanged on desktop; improves wrapping on phones)
+   ========================================================= */
+header::after{
+  content:"";
+  display:block;
+  height:2px;
+  margin-top:10px;
+  border-radius:999px;
+  background: linear-gradient(90deg,
+    rgba(109,214,209,0) 0%,
+    rgba(109,214,209,0.55) 20%,
+    rgba(231,163,182,0.35) 50%,
+    rgba(109,214,209,0.55) 80%,
+    rgba(109,214,209,0) 100%);
+  box-shadow: 0 0 18px rgba(109,214,209,0.16);
+}
+
+@media (max-width: 520px){
+  /* Header stack + button wrap */
+  header{
+    padding-bottom: 8px !important;
+  }
+  #chipNetwork{
+    width: 100% !important;
+    text-align:center !important;
+    margin-top: 10px !important;
+  }
+  .top-actions{
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    margin-top: 10px !important;
+  }
+  #btnWalletConnect{
+    grid-column: 1 / -1 !important; /* full-width on its own row */
+  }
+  .top-actions .btn{
+    width: 100% !important;
+    white-space: nowrap !important;
+  }
+
+  /* Address pill: prevent overflow */
+  .subbar{
+    gap: 10px !important;
+  }
+  .addr{
+    width: 100% !important;
+    max-width: 100% !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 12px !important;
+    padding: 10px 12px !important;
+  }
+  #networkWarning{
+    width: 100% !important;
+  }
+
+  /* Tabs / big action buttons: keep them from “breaking” */
+  .tabs, .big-tabs, .tab-row{
+    gap: 10px !important;
+  }
+  .tab, .tab-btn, .big-tab, .big-tab-btn{
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    white-space: nowrap !important;
+  }
+
+     /* Stake area: clean mobile layout */
+  .stake-main{
+    display:grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    grid-template-areas:
+      "box box"
+      "adjust toggle" !important;
+    gap: 12px !important;
+    align-items: center !important;
+  }
+
+  .stake-box{
+    grid-area: box !important;
+    width: 100% !important;
+  }
+
+  .stake-box .stake-amount{
+    font-size: 18px !important;
+    line-height: 1.2 !important;
+  }
+
+  .stake-adjust{
+    grid-area: adjust !important;
+    display:flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .adjust-btn{
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 16px !important;
+    font-size: 22px !important;
+    line-height: 1 !important;
+  }
+
+  .stake-toggle{
+    grid-area: toggle !important;
+    display:flex !important;
+    flex-direction: row !important; /* ETH + USD side-by-side */
+    gap: 10px !important;
+    width: 100% !important;
+    margin: 0 !important;
+    min-width: 0 !important;
+  }
+
+  .stake-toggle button{
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    padding: 12px 0 !important;
+  }
+
+  .adjust-btn{
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 16px !important;
+    font-size: 22px !important;
+    line-height: 1 !important;
+  }
+
+  /* Quick amount chips: slightly tighter */
+  .quick-row{
+    gap: 10px !important;
+  }
+  .quick-amt{
+    padding: 10px 0 !important;
+  }
+}
+
+/* Extra Miami “neon edge” for primary elements (subtle) */
+.btn.accent, .chip.badge, .deadline-highlight{
+  position: relative;
+}
+.btn.accent::after, .chip.badge::after{
+  content:"";
+  position:absolute;
+  inset:-2px;
+  border-radius: inherit;
+  background: linear-gradient(135deg,
+    rgba(109,214,209,0.35),
+    rgba(231,163,182,0.20),
+    rgba(232,214,201,0.18));
+  filter: blur(10px);
+  z-index:-1;
+  opacity:0.55;
+  pointer-events:none;
+}
+html, body{
+  min-height: 100%;
+  background-color: var(--bg);
+}
+
+body{
+  min-height: 100vh;
+  background-attachment: fixed;
+}
+
+</style>
 </head>
 <body>
 <div class="app">
@@ -1052,6 +1688,11 @@
       <div id="chipNetworkBottom" class="chip">Base • Mainnet • (8453)</div>
     </div>
     <div class="summary-row">
+      <span class="summary-label">Wallet</span>
+      <span id="sbWalletNet" class="summary-value">Wallet: not connected</span>
+    </div>
+
+    <div class="summary-row">
       <span class="summary-label">Pot value</span>
       <span class="summary-value"><span id="sbPotEth">0.000000</span> ETH (<span id="sbPotUsd">$0.00</span>)</span>
     </div>
@@ -1062,7 +1703,7 @@
     <div class="summary-row">
       <span class="summary-label">Fee</span>
       <span class="summary-value">
-        <span id="chipFeeMain" class="badge">Fee 2.5%</span>
+        <span id="chipFeeMain" class="chip badge">Fee 2.5%</span>
       </span>
     </div>
     <div class="summary-row" style="margin-top:6px">
