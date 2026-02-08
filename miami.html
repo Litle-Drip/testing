@@ -1402,7 +1402,7 @@ header::after{
     white-space: nowrap !important;
   }
 
-    /* Stake area: put amount full width, then +/- + toggle nicely */
+     /* Stake area: clean mobile layout */
   .stake-main{
     display:grid !important;
     grid-template-columns: 1fr 1fr !important;
@@ -1427,26 +1427,34 @@ header::after{
     grid-area: adjust !important;
     display:flex !important;
     flex-direction: row !important;
-    justify-content:center !important;
-    align-items:center !important;
+    justify-content: center !important;
+    align-items: center !important;
     gap: 12px !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
     width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .adjust-btn{
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 16px !important;
+    font-size: 22px !important;
+    line-height: 1 !important;
   }
 
   .stake-toggle{
     grid-area: toggle !important;
     display:flex !important;
-    flex-direction: column !important;
+    flex-direction: row !important; /* ETH + USD side-by-side */
     gap: 10px !important;
-    min-width: 0 !important;
-    margin-left: 0 !important;
     width: 100% !important;
+    margin: 0 !important;
+    min-width: 0 !important;
   }
 
   .stake-toggle button{
-    width: 100% !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
     padding: 12px 0 !important;
   }
 
